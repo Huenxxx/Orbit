@@ -1,3 +1,6 @@
+/* ===== Import Google Fonts (must be first) ===== */
+@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+
 /* ORBIT - Global Styles & Design System */
 /* A modern, space-themed game launcher */
 
@@ -10,23 +13,23 @@
   --color-cosmos: #151520;
   --color-stellar: #1a1a28;
   --color-galaxy: #252535;
-  
+
   /* Accent Colors - Orbital Glow */
   --color-primary: #6366f1;
   --color-primary-light: #818cf8;
   --color-primary-dark: #4f46e5;
   --color-primary-glow: rgba(99, 102, 241, 0.3);
-  
+
   --color-secondary: #06b6d4;
   --color-secondary-light: #22d3ee;
   --color-secondary-dark: #0891b2;
   --color-secondary-glow: rgba(6, 182, 212, 0.3);
-  
+
   --color-accent: #f472b6;
   --color-accent-light: #f9a8d4;
   --color-accent-dark: #ec4899;
   --color-accent-glow: rgba(244, 114, 182, 0.3);
-  
+
   /* Status Colors */
   --color-success: #10b981;
   --color-success-glow: rgba(16, 185, 129, 0.3);
@@ -36,26 +39,26 @@
   --color-error-glow: rgba(239, 68, 68, 0.3);
   --color-info: #3b82f6;
   --color-info-glow: rgba(59, 130, 246, 0.3);
-  
+
   /* Text Colors */
   --text-primary: #f8fafc;
   --text-secondary: #94a3b8;
   --text-tertiary: #64748b;
   --text-muted: #475569;
-  
+
   /* Gradient Definitions */
   --gradient-primary: linear-gradient(135deg, var(--color-primary) 0%, var(--color-secondary) 100%);
   --gradient-accent: linear-gradient(135deg, var(--color-accent) 0%, var(--color-primary) 100%);
   --gradient-dark: linear-gradient(180deg, var(--color-nebula) 0%, var(--color-void) 100%);
-  --gradient-card: linear-gradient(145deg, rgba(255,255,255,0.05) 0%, rgba(255,255,255,0.02) 100%);
+  --gradient-card: linear-gradient(145deg, rgba(255, 255, 255, 0.05) 0%, rgba(255, 255, 255, 0.02) 100%);
   --gradient-glow: radial-gradient(ellipse at center, var(--color-primary-glow) 0%, transparent 70%);
-  
+
   /* Borders */
   --border-subtle: 1px solid rgba(255, 255, 255, 0.06);
   --border-light: 1px solid rgba(255, 255, 255, 0.1);
   --border-medium: 1px solid rgba(255, 255, 255, 0.15);
   --border-glow: 1px solid var(--color-primary);
-  
+
   /* Shadows */
   --shadow-sm: 0 1px 2px rgba(0, 0, 0, 0.3);
   --shadow-md: 0 4px 6px -1px rgba(0, 0, 0, 0.4), 0 2px 4px -1px rgba(0, 0, 0, 0.3);
@@ -63,7 +66,7 @@
   --shadow-xl: 0 20px 25px -5px rgba(0, 0, 0, 0.5), 0 10px 10px -5px rgba(0, 0, 0, 0.4);
   --shadow-glow: 0 0 20px var(--color-primary-glow), 0 0 40px var(--color-primary-glow);
   --shadow-glow-sm: 0 0 10px var(--color-primary-glow);
-  
+
   /* Spacing */
   --space-1: 0.25rem;
   --space-2: 0.5rem;
@@ -75,7 +78,7 @@
   --space-10: 2.5rem;
   --space-12: 3rem;
   --space-16: 4rem;
-  
+
   /* Border Radius */
   --radius-sm: 6px;
   --radius-md: 10px;
@@ -83,11 +86,11 @@
   --radius-xl: 20px;
   --radius-2xl: 28px;
   --radius-full: 9999px;
-  
+
   /* Typography */
   --font-sans: 'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
   --font-mono: 'JetBrains Mono', 'Fira Code', monospace;
-  
+
   --text-xs: 0.75rem;
   --text-sm: 0.875rem;
   --text-base: 1rem;
@@ -97,13 +100,13 @@
   --text-3xl: 1.875rem;
   --text-4xl: 2.25rem;
   --text-5xl: 3rem;
-  
+
   /* Transitions */
   --transition-fast: 150ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-base: 250ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-slow: 350ms cubic-bezier(0.4, 0, 0.2, 1);
   --transition-bounce: 500ms cubic-bezier(0.68, -0.55, 0.265, 1.55);
-  
+
   /* Z-index layers */
   --z-base: 1;
   --z-dropdown: 100;
@@ -112,7 +115,7 @@
   --z-popover: 400;
   --z-tooltip: 500;
   --z-toast: 600;
-  
+
   /* Sidebar */
   --sidebar-width: 260px;
   --sidebar-collapsed: 72px;
@@ -120,7 +123,9 @@
 }
 
 /* ===== Reset & Base Styles ===== */
-*, *::before, *::after {
+*,
+*::before,
+*::after {
   box-sizing: border-box;
   margin: 0;
   padding: 0;
@@ -150,18 +155,40 @@ body {
 }
 
 /* ===== Typography ===== */
-h1, h2, h3, h4, h5, h6 {
+h1,
+h2,
+h3,
+h4,
+h5,
+h6 {
   font-weight: 600;
   line-height: 1.3;
   letter-spacing: -0.02em;
 }
 
-h1 { font-size: var(--text-4xl); }
-h2 { font-size: var(--text-3xl); }
-h3 { font-size: var(--text-2xl); }
-h4 { font-size: var(--text-xl); }
-h5 { font-size: var(--text-lg); }
-h6 { font-size: var(--text-base); }
+h1 {
+  font-size: var(--text-4xl);
+}
+
+h2 {
+  font-size: var(--text-3xl);
+}
+
+h3 {
+  font-size: var(--text-2xl);
+}
+
+h4 {
+  font-size: var(--text-xl);
+}
+
+h5 {
+  font-size: var(--text-lg);
+}
+
+h6 {
+  font-size: var(--text-base);
+}
 
 p {
   color: var(--text-secondary);
@@ -230,7 +257,7 @@ a:hover {
 .btn-primary {
   background: var(--gradient-primary);
   color: white;
-  box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255,255,255,0.1);
+  box-shadow: var(--shadow-md), inset 0 1px 0 rgba(255, 255, 255, 0.1);
 }
 
 .btn-primary:hover {
@@ -393,95 +420,169 @@ a:hover {
 
 /* ===== Animations ===== */
 @keyframes fadeIn {
-  from { opacity: 0; }
-  to { opacity: 1; }
+  from {
+    opacity: 0;
+  }
+
+  to {
+    opacity: 1;
+  }
 }
 
 @keyframes slideUp {
-  from { 
-    opacity: 0; 
-    transform: translateY(20px); 
+  from {
+    opacity: 0;
+    transform: translateY(20px);
   }
-  to { 
-    opacity: 1; 
-    transform: translateY(0); 
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
 @keyframes slideDown {
-  from { 
-    opacity: 0; 
-    transform: translateY(-20px); 
+  from {
+    opacity: 0;
+    transform: translateY(-20px);
   }
-  to { 
-    opacity: 1; 
-    transform: translateY(0); 
+
+  to {
+    opacity: 1;
+    transform: translateY(0);
   }
 }
 
 @keyframes scaleIn {
-  from { 
-    opacity: 0; 
-    transform: scale(0.95); 
+  from {
+    opacity: 0;
+    transform: scale(0.95);
   }
-  to { 
-    opacity: 1; 
-    transform: scale(1); 
+
+  to {
+    opacity: 1;
+    transform: scale(1);
   }
 }
 
 @keyframes pulse {
-  0%, 100% { opacity: 1; }
-  50% { opacity: 0.5; }
+
+  0%,
+  100% {
+    opacity: 1;
+  }
+
+  50% {
+    opacity: 0.5;
+  }
 }
 
 @keyframes spin {
-  from { transform: rotate(0deg); }
-  to { transform: rotate(360deg); }
+  from {
+    transform: rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg);
+  }
 }
 
 @keyframes orbit {
-  from { transform: rotate(0deg) translateX(10px) rotate(0deg); }
-  to { transform: rotate(360deg) translateX(10px) rotate(-360deg); }
+  from {
+    transform: rotate(0deg) translateX(10px) rotate(0deg);
+  }
+
+  to {
+    transform: rotate(360deg) translateX(10px) rotate(-360deg);
+  }
 }
 
 @keyframes shimmer {
-  0% { background-position: -200% 0; }
-  100% { background-position: 200% 0; }
+  0% {
+    background-position: -200% 0;
+  }
+
+  100% {
+    background-position: 200% 0;
+  }
 }
 
-.animate-fade-in { animation: fadeIn var(--transition-base) ease-out; }
-.animate-slide-up { animation: slideUp var(--transition-base) ease-out; }
-.animate-slide-down { animation: slideDown var(--transition-base) ease-out; }
-.animate-scale-in { animation: scaleIn var(--transition-base) ease-out; }
-.animate-pulse { animation: pulse 2s ease-in-out infinite; }
-.animate-spin { animation: spin 1s linear infinite; }
+.animate-fade-in {
+  animation: fadeIn var(--transition-base) ease-out;
+}
+
+.animate-slide-up {
+  animation: slideUp var(--transition-base) ease-out;
+}
+
+.animate-slide-down {
+  animation: slideDown var(--transition-base) ease-out;
+}
+
+.animate-scale-in {
+  animation: scaleIn var(--transition-base) ease-out;
+}
+
+.animate-pulse {
+  animation: pulse 2s ease-in-out infinite;
+}
+
+.animate-spin {
+  animation: spin 1s linear infinite;
+}
 
 /* Skeleton loading */
 .skeleton {
-  background: linear-gradient(
-    90deg,
-    var(--color-stellar) 25%,
-    var(--color-galaxy) 50%,
-    var(--color-stellar) 75%
-  );
+  background: linear-gradient(90deg,
+      var(--color-stellar) 25%,
+      var(--color-galaxy) 50%,
+      var(--color-stellar) 75%);
   background-size: 200% 100%;
   animation: shimmer 1.5s infinite;
   border-radius: var(--radius-md);
 }
 
 /* ===== Layout Helpers ===== */
-.flex { display: flex; }
-.flex-col { flex-direction: column; }
-.items-center { align-items: center; }
-.justify-center { justify-content: center; }
-.justify-between { justify-content: space-between; }
-.gap-1 { gap: var(--space-1); }
-.gap-2 { gap: var(--space-2); }
-.gap-3 { gap: var(--space-3); }
-.gap-4 { gap: var(--space-4); }
-.gap-6 { gap: var(--space-6); }
-.gap-8 { gap: var(--space-8); }
+.flex {
+  display: flex;
+}
 
-/* ===== Import Google Fonts ===== */
-@import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap');
+.flex-col {
+  flex-direction: column;
+}
+
+.items-center {
+  align-items: center;
+}
+
+.justify-center {
+  justify-content: center;
+}
+
+.justify-between {
+  justify-content: space-between;
+}
+
+.gap-1 {
+  gap: var(--space-1);
+}
+
+.gap-2 {
+  gap: var(--space-2);
+}
+
+.gap-3 {
+  gap: var(--space-3);
+}
+
+.gap-4 {
+  gap: var(--space-4);
+}
+
+.gap-6 {
+  gap: var(--space-6);
+}
+
+.gap-8 {
+  gap: var(--space-8);
+}

@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import {
     LayoutDashboard,
     Library,
@@ -10,9 +11,13 @@ import {
     ChevronLeft,
     ChevronRight,
     Puzzle,
-    Download
+    Download,
+    LogIn,
+    LogOut
 } from 'lucide-react';
 import { useUIStore } from '../../stores';
+import { useAuthStore } from '../../stores/authStore';
+import { AuthModal } from '../AuthModal/AuthModal';
 import './Sidebar.css';
 
 interface NavItem {
@@ -35,13 +40,22 @@ const secondaryNavItems: NavItem[] = [
     { id: 'cloud', label: 'Nube', icon: <Cloud size={20} /> },
 ];
 
-const bottomNavItems: NavItem[] = [
-    { id: 'profile', label: 'Perfil', icon: <User size={20} /> },
-    { id: 'settings', label: 'Configuración', icon: <Settings size={20} /> },
-];
-
 export function Sidebar() {
     const { sidebarCollapsed, toggleSidebar, currentPage, setCurrentPage } = useUIStore();
+    const { user, userData, isInitialized, initialize, logout } = useAuthStore();
+    const [showAuthModal, setShowAuthModal] = useState(false);
+
+    useEffect(() => {
+        initialize();
+    }, []);
+
+    const handleLogout = async () => {
+        try {
+            await logout();
+        } catch (error) {
+            console.error('Logout error:', error);
+        }
+    };
 
     const renderNavItem = (item: NavItem) => (
         <button
@@ -64,56 +78,116 @@ export function Sidebar() {
     );
 
     return (
-        <aside className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
-            <div className="sidebar-content">
-                {/* Main Navigation */}
-                <nav className="sidebar-nav">
-                    <div className="nav-group">
-                        {mainNavItems.map(renderNavItem)}
+        <>
+            <aside className={`sidebar ${sidebarCollapsed ? 'collapsed' : ''}`}>
+                <div className="sidebar-content">
+                    {/* Main Navigation */}
+                    <nav className="sidebar-nav">
+                        <div className="nav-group">
+                            {mainNavItems.map(renderNavItem)}
+                        </div>
+
+                        <div className="nav-divider"></div>
+
+                        <div className="nav-group">
+                            <span className="nav-group-title">
+                                {!sidebarCollapsed && 'CARACTERÍSTICAS'}
+                            </span>
+                            {secondaryNavItems.map(renderNavItem)}
+                        </div>
+                    </nav>
+
+                    {/* Bottom Navigation */}
+                    <div className="sidebar-bottom">
+                        <div className="nav-divider"></div>
+
+                        {/* Profile / Login */}
+                        {user ? (
+                            <button
+                                className={`sidebar-nav-item ${currentPage === 'profile' ? 'active' : ''}`}
+                                onClick={() => setCurrentPage('profile')}
+                                title={sidebarCollapsed ? 'Perfil' : undefined}
+                            >
+                                <span className="nav-icon user-avatar">
+                                    {user.photoURL ? (
+                                        <img src={user.photoURL} alt="Avatar" />
+                                    ) : (
+                                        <User size={20} />
+                                    )}
+                                </span>
+                                {!sidebarCollapsed && (
+                                    <span className="nav-label">
+                                        {userData?.username || user.displayName || 'Perfil'}
+                                    </span>
+                                )}
+                            </button>
+                        ) : (
+                            <button
+                                className="sidebar-nav-item login-btn"
+                                onClick={() => setShowAuthModal(true)}
+                                title={sidebarCollapsed ? 'Iniciar sesión' : undefined}
+                            >
+                                <span className="nav-icon"><LogIn size={20} /></span>
+                                {!sidebarCollapsed && <span className="nav-label">Iniciar sesión</span>}
+                            </button>
+                        )}
+
+                        {/* Settings */}
+                        <button
+                            className={`sidebar-nav-item ${currentPage === 'settings' ? 'active' : ''}`}
+                            onClick={() => setCurrentPage('settings')}
+                            title={sidebarCollapsed ? 'Configuración' : undefined}
+                        >
+                            <span className="nav-icon"><Settings size={20} /></span>
+                            {!sidebarCollapsed && <span className="nav-label">Configuración</span>}
+                        </button>
+
+                        {/* Logout (only when logged in) */}
+                        {user && (
+                            <button
+                                className="sidebar-nav-item logout-btn"
+                                onClick={handleLogout}
+                                title={sidebarCollapsed ? 'Cerrar sesión' : undefined}
+                            >
+                                <span className="nav-icon"><LogOut size={20} /></span>
+                                {!sidebarCollapsed && <span className="nav-label">Cerrar sesión</span>}
+                            </button>
+                        )}
+
+                        <button
+                            className="sidebar-toggle"
+                            onClick={toggleSidebar}
+                            title={sidebarCollapsed ? 'Expandir' : 'Colapsar'}
+                        >
+                            {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
+                            {!sidebarCollapsed && <span>Colapsar</span>}
+                        </button>
                     </div>
-
-                    <div className="nav-divider"></div>
-
-                    <div className="nav-group">
-                        <span className="nav-group-title">
-                            {!sidebarCollapsed && 'CARACTERÍSTICAS'}
-                        </span>
-                        {secondaryNavItems.map(renderNavItem)}
-                    </div>
-                </nav>
-
-                {/* Bottom Navigation */}
-                <div className="sidebar-bottom">
-                    <div className="nav-divider"></div>
-                    {bottomNavItems.map(renderNavItem)}
-
-                    <button
-                        className="sidebar-toggle"
-                        onClick={toggleSidebar}
-                        title={sidebarCollapsed ? 'Expandir' : 'Colapsar'}
-                    >
-                        {sidebarCollapsed ? <ChevronRight size={18} /> : <ChevronLeft size={18} />}
-                        {!sidebarCollapsed && <span>Colapsar</span>}
-                    </button>
                 </div>
-            </div>
 
-            {/* Currently Playing Indicator */}
-            {!sidebarCollapsed && (
-                <div className="sidebar-playing">
-                    <div className="playing-indicator">
-                        <Gamepad2 size={16} />
-                        <span>En órbita</span>
-                    </div>
-                    <div className="playing-game">
-                        <div className="playing-game-cover"></div>
-                        <div className="playing-game-info">
-                            <span className="playing-game-title">Sin juego activo</span>
-                            <span className="playing-game-time">--:--</span>
+                {/* Currently Playing Indicator */}
+                {!sidebarCollapsed && (
+                    <div className="sidebar-playing">
+                        <div className="playing-indicator">
+                            <Gamepad2 size={16} />
+                            <span>En órbita</span>
+                        </div>
+                        <div className="playing-game">
+                            <div className="playing-game-cover"></div>
+                            <div className="playing-game-info">
+                                <span className="playing-game-title">Sin juego activo</span>
+                                <span className="playing-game-time">--:--</span>
+                            </div>
                         </div>
                     </div>
-                </div>
-            )}
-        </aside>
+                )}
+            </aside>
+
+            {/* Auth Modal */}
+            <AuthModal
+                isOpen={showAuthModal}
+                onClose={() => setShowAuthModal(false)}
+            />
+        </>
     );
 }

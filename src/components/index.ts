@@ -5,3 +5,6 @@ export { Sidebar } from './Sidebar/Sidebar';
 // Game Components
 export { GameCard } from './GameCard/GameCard';
 export { AddGameModal } from './AddGameModal/AddGameModal';
+
+// Auth Components
+export { AuthModal } from './AuthModal/AuthModal';

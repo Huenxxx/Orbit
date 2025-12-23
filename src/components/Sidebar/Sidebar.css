@@ -234,3 +234,43 @@
     color: var(--text-muted);
     font-family: var(--font-mono);
 }
+
+/* User Avatar in Nav */
+.nav-icon.user-avatar {
+    width: 24px;
+    height: 24px;
+    border-radius: 50%;
+    overflow: hidden;
+    background: var(--gradient-primary);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.nav-icon.user-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Login Button */
+.sidebar-nav-item.login-btn {
+    background: var(--color-primary-glow);
+    color: var(--color-primary-light);
+    border: 1px solid rgba(99, 102, 241, 0.3);
+}
+
+.sidebar-nav-item.login-btn:hover {
+    background: var(--color-primary);
+    color: white;
+}
+
+/* Logout Button */
+.sidebar-nav-item.logout-btn {
+    color: var(--text-muted);
+}
+
+.sidebar-nav-item.logout-btn:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--color-error);
+}

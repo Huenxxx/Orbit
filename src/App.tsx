@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { TitleBar, Sidebar } from './components';
-import { Dashboard, Library, Settings, Profile } from './pages';
+import { Dashboard, Library, Settings, Profile, Catalog } from './pages';
 import { useUIStore, useSettingsStore } from './stores';
 import './App.css';
 
@@ -62,12 +62,12 @@ function App() {
         return wrapPage('dashboard', <Dashboard />);
       case 'library':
         return wrapPage('library', <Library />);
+      case 'catalog':
+        return wrapPage('catalog', <Catalog />);
       case 'settings':
         return wrapPage('settings', <Settings />);
       case 'profile':
         return wrapPage('profile', <Profile />);
-      case 'catalog':
-        return wrapPage('catalog', <PlaceholderPage title="Catálogo" description="Explora miles de juegos y descubre tu próxima aventura" />);
       case 'downloads':
         return wrapPage('downloads', <PlaceholderPage title="Descargas" description="Gestiona tus descargas activas y cola de instalación" />);
       case 'achievements':
