@@ -1,0 +1,430 @@
+.profile-page {
+    flex: 1;
+    overflow-y: auto;
+}
+
+/* Profile Header */
+.profile-header {
+    position: relative;
+    margin-bottom: var(--space-8);
+}
+
+.profile-cover {
+    height: 180px;
+    background: var(--gradient-dark);
+    position: relative;
+    overflow: hidden;
+}
+
+.profile-cover::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background:
+        radial-gradient(ellipse at 20% 50%, var(--color-primary-glow) 0%, transparent 50%),
+        radial-gradient(ellipse at 80% 50%, var(--color-secondary-glow) 0%, transparent 50%);
+    opacity: 0.5;
+}
+
+.cover-gradient {
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 100px;
+    background: linear-gradient(to top, var(--color-space), transparent);
+}
+
+.profile-info {
+    display: flex;
+    align-items: flex-end;
+    gap: var(--space-6);
+    padding: 0 var(--space-8);
+    margin-top: -60px;
+    position: relative;
+    z-index: 1;
+}
+
+/* Avatar */
+.avatar-container {
+    position: relative;
+    flex-shrink: 0;
+}
+
+.avatar {
+    width: 120px;
+    height: 120px;
+    border-radius: 50%;
+    background: var(--color-nebula);
+    border: 4px solid var(--color-space);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    overflow: hidden;
+    box-shadow: var(--shadow-xl);
+}
+
+.avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.avatar-edit {
+    position: absolute;
+    bottom: 4px;
+    right: 4px;
+    width: 32px;
+    height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-primary);
+    border: 2px solid var(--color-space);
+    border-radius: 50%;
+    color: white;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.avatar-edit:hover {
+    background: var(--color-primary-light);
+    transform: scale(1.1);
+}
+
+.status-indicator {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    width: 16px;
+    height: 16px;
+    border-radius: 50%;
+    border: 3px solid var(--color-space);
+}
+
+.status-indicator.online {
+    background: var(--color-success);
+}
+
+.status-indicator.playing {
+    background: var(--color-primary);
+}
+
+.status-indicator.away {
+    background: var(--color-warning);
+}
+
+.status-indicator.busy {
+    background: var(--color-error);
+}
+
+.status-indicator.offline {
+    background: var(--text-muted);
+}
+
+/* Profile Details */
+.profile-details {
+    flex: 1;
+    padding-bottom: var(--space-4);
+}
+
+.profile-details h1 {
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    margin-bottom: var(--space-1);
+}
+
+.bio {
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+    margin-bottom: var(--space-2);
+}
+
+.profile-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.member-since {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.edit-profile-btn {
+    align-self: flex-end;
+    margin-bottom: var(--space-4);
+}
+
+/* Edit Form */
+.edit-form {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+    max-width: 400px;
+}
+
+.edit-username {
+    font-size: var(--text-lg);
+    font-weight: 600;
+}
+
+.edit-bio {
+    resize: none;
+}
+
+.edit-actions {
+    display: flex;
+    gap: var(--space-2);
+}
+
+/* Profile Content */
+.profile-content {
+    padding: 0 var(--space-8) var(--space-8);
+}
+
+/* Stats Section */
+.stats-section {
+    margin-bottom: var(--space-8);
+}
+
+.stats-section h2 {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    margin-bottom: var(--space-4);
+    color: var(--text-secondary);
+}
+
+.stats-grid {
+    display: grid;
+    grid-template-columns: repeat(4, 1fr);
+    gap: var(--space-4);
+}
+
+@media (max-width: 1000px) {
+    .stats-grid {
+        grid-template-columns: repeat(2, 1fr);
+    }
+}
+
+.stat-card {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    padding: var(--space-5);
+    background: var(--color-nebula);
+    border: var(--border-subtle);
+    border-radius: var(--radius-lg);
+    position: relative;
+    overflow: hidden;
+}
+
+.stat-card::before {
+    content: '';
+    position: absolute;
+    left: 0;
+    top: 0;
+    bottom: 0;
+    width: 4px;
+}
+
+.stat-primary::before {
+    background: var(--color-primary);
+}
+
+.stat-secondary::before {
+    background: var(--color-secondary);
+}
+
+.stat-accent::before {
+    background: var(--color-accent);
+}
+
+.stat-success::before {
+    background: var(--color-success);
+}
+
+.stat-icon {
+    width: 48px;
+    height: 48px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-md);
+}
+
+.stat-primary .stat-icon {
+    background: var(--color-primary-glow);
+    color: var(--color-primary-light);
+}
+
+.stat-secondary .stat-icon {
+    background: var(--color-secondary-glow);
+    color: var(--color-secondary-light);
+}
+
+.stat-accent .stat-icon {
+    background: var(--color-accent-glow);
+    color: var(--color-accent-light);
+}
+
+.stat-success .stat-icon {
+    background: var(--color-success-glow);
+    color: var(--color-success);
+}
+
+.stat-content {
+    display: flex;
+    flex-direction: column;
+}
+
+.stat-value {
+    font-size: var(--text-2xl);
+    font-weight: 700;
+    color: var(--text-primary);
+}
+
+.stat-label {
+    font-size: var(--text-sm);
+    color: var(--text-tertiary);
+}
+
+/* Columns Layout */
+.profile-columns {
+    display: grid;
+    grid-template-columns: 2fr 1fr;
+    gap: var(--space-6);
+}
+
+@media (max-width: 900px) {
+    .profile-columns {
+        grid-template-columns: 1fr;
+    }
+}
+
+/* Activity Section */
+.activity-section,
+.highlights-section {
+    background: var(--color-nebula);
+    border: var(--border-subtle);
+    border-radius: var(--radius-lg);
+    padding: var(--space-5);
+}
+
+.activity-section h2,
+.highlights-section h2 {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-base);
+    font-weight: 600;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-4);
+}
+
+.activity-list {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.activity-item {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    padding: var(--space-3);
+    background: var(--color-cosmos);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+}
+
+.activity-item:hover {
+    background: var(--color-stellar);
+}
+
+.activity-cover {
+    width: 40px;
+    height: 40px;
+    background: var(--color-stellar);
+    border-radius: var(--radius-sm);
+    background-size: cover;
+    background-position: center;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.activity-info {
+    display: flex;
+    flex-direction: column;
+    min-width: 0;
+}
+
+.activity-title {
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+}
+
+.activity-time {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.empty-activity {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    padding: var(--space-8);
+    color: var(--text-muted);
+    text-align: center;
+}
+
+.empty-activity p {
+    margin-top: var(--space-2);
+    font-size: var(--text-sm);
+}
+
+/* Highlights */
+.highlights-grid {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-3);
+}
+
+.highlight-card {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    padding: var(--space-5);
+    background: var(--color-cosmos);
+    border-radius: var(--radius-md);
+    text-align: center;
+}
+
+.highlight-card svg {
+    color: var(--color-primary-light);
+    margin-bottom: var(--space-2);
+}
+
+.highlight-label {
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    margin-bottom: var(--space-1);
+}
+
+.highlight-value {
+    font-size: var(--text-lg);
+    font-weight: 600;
+    color: var(--text-primary);
+}
