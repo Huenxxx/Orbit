@@ -8,10 +8,8 @@ import {
     sendPasswordResetEmail,
     GoogleAuthProvider,
     signInWithPopup,
-    User,
-    UserCredential,
-    Unsubscribe
 } from 'firebase/auth';
+import type { User, UserCredential, Unsubscribe } from 'firebase/auth';
 import {
     doc,
     setDoc,
@@ -71,8 +69,11 @@ class AuthService {
                 displayName: username
             });
 
-            // Create user document in Firestore
-            await this.createUserDocument(userCredential.user, username);
+            // Create user document in Firestore (non-blocking)
+            // Don't await - let it run in background to not block the registration
+            this.createUserDocument(userCredential.user, username).catch((err) => {
+                console.warn('⚠️ Could not create user document in Firestore:', err.message);
+            });
 
             return userCredential;
         } catch (error: any) {
@@ -87,8 +88,10 @@ class AuthService {
         try {
             const userCredential = await signInWithEmailAndPassword(auth, email, password);
 
-            // Update last seen
-            await this.updateLastSeen(userCredential.user.uid);
+            // Update last seen (non-blocking)
+            this.updateLastSeen(userCredential.user.uid).catch((err) => {
+                console.warn('⚠️ Could not update last seen in Firestore:', err.message);
+            });
 
             return userCredential;
         } catch (error: any) {
@@ -104,17 +107,23 @@ class AuthService {
             const provider = new GoogleAuthProvider();
             const userCredential = await signInWithPopup(auth, provider);
 
-            // Check if user document exists, if not create it
+            // Update/create Firestore document (non-blocking)
             if (db) {
-                const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
-                if (!userDoc.exists()) {
-                    await this.createUserDocument(
-                        userCredential.user,
-                        userCredential.user.displayName || 'Usuario'
-                    );
-                } else {
-                    await this.updateLastSeen(userCredential.user.uid);
-                }
+                (async () => {
+                    try {
+                        const userDoc = await getDoc(doc(db, 'users', userCredential.user.uid));
+                        if (!userDoc.exists()) {
+                            await this.createUserDocument(
+                                userCredential.user,
+                                userCredential.user.displayName || 'Usuario'
+                            );
+                        } else {
+                            await this.updateLastSeen(userCredential.user.uid);
+                        }
+                    } catch (err: any) {
+                        console.warn('⚠️ Could not sync user document with Firestore:', err.message);
+                    }
+                })();
             }
 
             return userCredential;

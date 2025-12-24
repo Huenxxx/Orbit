@@ -155,6 +155,26 @@
     color: var(--text-muted);
 }
 
+.email {
+    font-size: var(--text-sm);
+    color: var(--text-muted);
+    margin-bottom: var(--space-1);
+}
+
+.spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
 .edit-profile-btn {
     align-self: flex-end;
     margin-bottom: var(--space-4);

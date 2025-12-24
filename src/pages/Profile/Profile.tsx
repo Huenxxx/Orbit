@@ -11,15 +11,21 @@ import {
     Calendar,
     TrendingUp,
     Star,
-    Award
+    Award,
+    Save,
+    X,
+    Loader2
 } from 'lucide-react';
 import { useProfileStore, useGamesStore } from '../../stores';
+import { useAuthStore } from '../../stores/authStore';
 import './Profile.css';
 
 export function Profile() {
     const { profile, loadProfile, updateProfile } = useProfileStore();
     const { games, loadGames } = useGamesStore();
+    const { user, userData } = useAuthStore();
     const [isEditing, setIsEditing] = useState(false);
+    const [isSaving, setIsSaving] = useState(false);
     const [editData, setEditData] = useState({
         username: '',
         bio: ''
@@ -30,21 +36,31 @@ export function Profile() {
         loadGames();
     }, []);
 
+    // Use Firebase user data if available, otherwise use local profile
+    const displayName = user?.displayName || userData?.username || profile?.username || 'Jugador';
+    const displayAvatar = user?.photoURL || userData?.avatar || profile?.avatar || null;
+    const displayEmail = user?.email || '';
+
     useEffect(() => {
-        if (profile) {
-            setEditData({
-                username: profile.username,
-                bio: profile.bio || ''
-            });
-        }
-    }, [profile]);
+        setEditData({
+            username: displayName,
+            bio: profile?.bio || ''
+        });
+    }, [profile, user, userData]);
 
     const handleSave = async () => {
-        await updateProfile({
-            username: editData.username,
-            bio: editData.bio
-        });
-        setIsEditing(false);
+        setIsSaving(true);
+        try {
+            await updateProfile({
+                username: editData.username,
+                bio: editData.bio
+            });
+            setIsEditing(false);
+        } catch (error) {
+            console.error('Error saving profile:', error);
+        } finally {
+            setIsSaving(false);
+        }
     };
 
     const totalPlaytime = games.reduce((acc, g) => acc + g.playtime, 0);
@@ -54,9 +70,11 @@ export function Profile() {
     function getMostCommonGenre(games: any[]): string {
         const genreCount: Record<string, number> = {};
         games.forEach(game => {
-            game.genres.forEach((genre: string) => {
-                genreCount[genre] = (genreCount[genre] || 0) + 1;
-            });
+            if (game.genres) {
+                game.genres.forEach((genre: string) => {
+                    genreCount[genre] = (genreCount[genre] || 0) + 1;
+                });
+            }
         });
         const sorted = Object.entries(genreCount).sort((a, b) => b[1] - a[1]);
         return sorted[0]?.[0] || 'N/A';
@@ -101,13 +119,13 @@ export function Profile() {
                 <div className="profile-info">
                     <div className="avatar-container">
                         <div className="avatar">
-                            {profile?.avatar ? (
-                                <img src={profile.avatar} alt="Avatar" />
+                            {displayAvatar ? (
+                                <img src={displayAvatar} alt="Avatar" />
                             ) : (
                                 <User size={48} />
                             )}
                         </div>
-                        <button className="avatar-edit">
+                        <button className="avatar-edit" title="Cambiar avatar">
                             <Camera size={14} />
                         </button>
                         <div className={`status-indicator ${profile?.status || 'online'}`}></div>
@@ -131,17 +149,19 @@ export function Profile() {
                                     rows={2}
                                 />
                                 <div className="edit-actions">
-                                    <button className="btn btn-ghost" onClick={() => setIsEditing(false)}>
-                                        Cancelar
+                                    <button className="btn btn-ghost" onClick={() => setIsEditing(false)} disabled={isSaving}>
+                                        <X size={16} /> Cancelar
                                     </button>
-                                    <button className="btn btn-primary" onClick={handleSave}>
-                                        Guardar
+                                    <button className="btn btn-primary" onClick={handleSave} disabled={isSaving}>
+                                        {isSaving ? <Loader2 size={16} className="spinner" /> : <Save size={16} />}
+                                        {isSaving ? 'Guardando...' : 'Guardar'}
                                     </button>
                                 </div>
                             </div>
                         ) : (
                             <>
-                                <h1>{profile?.username || 'Jugador'}</h1>
+                                <h1>{displayName}</h1>
+                                {displayEmail && <p className="email">{displayEmail}</p>}
                                 <p className="bio">{profile?.bio || 'Sin bio configurada'}</p>
                                 <div className="profile-meta">
                                     <span className="member-since">

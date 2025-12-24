@@ -41,8 +41,13 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         // Subscribe to auth state changes
         authService.onAuthStateChange(async (user) => {
             if (user) {
-                // User is signed in, fetch additional data
-                const userData = await authService.getUserData(user.uid);
+                // User is signed in, try to fetch additional data
+                let userData = null;
+                try {
+                    userData = await authService.getUserData(user.uid);
+                } catch (err: any) {
+                    console.warn('⚠️ Could not fetch user data from Firestore:', err.message);
+                }
                 set({ user, userData, isInitialized: true, isLoading: false });
             } else {
                 // User is signed out
@@ -60,6 +65,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({ isLoading: true, error: null });
         try {
             await authService.register(email, password, username);
+            set({ isLoading: false });
             // Auth state listener will update the user
         } catch (error: any) {
             set({ error: error.message, isLoading: false });
@@ -76,6 +82,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({ isLoading: true, error: null });
         try {
             await authService.login(email, password);
+            set({ isLoading: false });
             // Auth state listener will update the user
         } catch (error: any) {
             set({ error: error.message, isLoading: false });
@@ -92,6 +99,7 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         set({ isLoading: true, error: null });
         try {
             await authService.loginWithGoogle();
+            set({ isLoading: false });
             // Auth state listener will update the user
         } catch (error: any) {
             set({ error: error.message, isLoading: false });

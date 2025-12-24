@@ -1,0 +1,269 @@
+.edit-game-modal {
+    width: 600px;
+    max-width: 90vw;
+    max-height: 85vh;
+    background: var(--color-space);
+    border-radius: var(--radius-xl);
+    border: var(--border-subtle);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Tabs */
+.modal-tabs {
+    display: flex;
+    gap: var(--space-1);
+    padding: 0 var(--space-6);
+    background: var(--color-nebula);
+    border-bottom: var(--border-subtle);
+}
+
+.modal-tabs button {
+    padding: var(--space-3) var(--space-4);
+    background: transparent;
+    border: none;
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    position: relative;
+}
+
+.modal-tabs button:hover {
+    color: var(--text-primary);
+}
+
+.modal-tabs button.active {
+    color: var(--color-primary-light);
+}
+
+.modal-tabs button.active::after {
+    content: '';
+    position: absolute;
+    bottom: 0;
+    left: 0;
+    right: 0;
+    height: 2px;
+    background: var(--color-primary);
+    border-radius: 2px 2px 0 0;
+}
+
+/* Rating Input */
+.rating-input {
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.star-btn {
+    background: transparent;
+    border: none;
+    font-size: 24px;
+    color: var(--text-muted);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    padding: var(--space-1);
+}
+
+.star-btn:hover {
+    transform: scale(1.2);
+}
+
+.star-btn.active {
+    color: var(--color-warning);
+}
+
+.clear-rating {
+    margin-left: var(--space-3);
+    padding: var(--space-1) var(--space-2);
+    background: transparent;
+    border: var(--border-subtle);
+    border-radius: var(--radius-sm);
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.clear-rating:hover {
+    color: var(--text-secondary);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Cover preview */
+.cover-preview {
+    margin-top: var(--space-3);
+    width: 150px;
+    aspect-ratio: 3/4;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    border: var(--border-subtle);
+}
+
+.cover-preview img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+/* Spinner */
+.spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+/* Genre chips */
+.genre-chips {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+}
+
+.genre-chip {
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-stellar);
+    border: var(--border-subtle);
+    border-radius: var(--radius-full);
+    color: var(--text-secondary);
+    font-size: var(--text-xs);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.genre-chip:hover {
+    border-color: rgba(255, 255, 255, 0.2);
+    color: var(--text-primary);
+}
+
+.genre-chip.active {
+    background: var(--color-primary-glow);
+    border-color: var(--color-primary);
+    color: var(--color-primary-light);
+}
+
+/* Tags */
+.tags-input .input-with-button {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-stellar);
+    border: var(--border-subtle);
+    border-radius: var(--radius-md);
+}
+
+.tags-input .input-with-button svg {
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.tags-input .input-with-button input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-primary);
+    font-size: var(--text-sm);
+}
+
+.tags-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: var(--space-2);
+    margin-top: var(--space-2);
+}
+
+.tag {
+    display: inline-flex;
+    align-items: center;
+    gap: var(--space-1);
+    padding: var(--space-1) var(--space-2);
+    background: var(--color-primary-glow);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    font-size: var(--text-xs);
+}
+
+.tag button {
+    display: flex;
+    background: transparent;
+    border: none;
+    color: var(--text-muted);
+    cursor: pointer;
+    padding: 2px;
+}
+
+.tag button:hover {
+    color: var(--color-error);
+}
+
+/* Input with icon */
+.input-with-icon {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-3);
+    background: var(--color-stellar);
+    border: var(--border-subtle);
+    border-radius: var(--radius-md);
+}
+
+.input-with-icon svg {
+    color: var(--text-muted);
+    flex-shrink: 0;
+}
+
+.input-with-icon input {
+    flex: 1;
+    background: transparent;
+    border: none;
+    outline: none;
+    color: var(--text-primary);
+    font-size: var(--text-sm);
+}
+
+/* Form */
+.edit-game-modal .form-section {
+    padding: var(--space-4);
+}
+
+.edit-game-modal .form-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: var(--space-4);
+}
+
+.edit-game-modal .form-group {
+    margin-bottom: var(--space-4);
+}
+
+.edit-game-modal .form-group label {
+    display: block;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    color: var(--text-secondary);
+    margin-bottom: var(--space-2);
+}
+
+.edit-game-modal .form-hint {
+    display: block;
+    margin-top: var(--space-1);
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.edit-game-modal .modal-body {
+    flex: 1;
+    overflow-y: auto;
+}

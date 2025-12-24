@@ -1,8 +1,9 @@
 import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { TitleBar, Sidebar } from './components';
-import { Dashboard, Library, Settings, Profile, Catalog } from './pages';
+import { TitleBar, Sidebar, AuthScreen } from './components';
+import { Dashboard, Library, Settings, Profile, Catalog, Achievements } from './pages';
 import { useUIStore, useSettingsStore } from './stores';
+import { useAuthStore } from './stores/authStore';
 import './App.css';
 
 // Placeholder pages for navigation
@@ -18,12 +19,27 @@ function PlaceholderPage({ title, description }: { title: string; description?: 
   );
 }
 
+// Loading screen while checking auth
+function LoadingScreen() {
+  return (
+    <div className="loading-screen">
+      <div className="loading-logo">
+        <div className="orbit-ring"></div>
+        <div className="orbit-core"></div>
+      </div>
+      <p>Cargando ORBIT...</p>
+    </div>
+  );
+}
+
 function App() {
   const { currentPage } = useUIStore();
   const { loadSettings, settings } = useSettingsStore();
+  const { user, isInitialized, initialize, isAvailable } = useAuthStore();
 
   useEffect(() => {
     loadSettings();
+    initialize();
   }, []);
 
   // Apply theme
@@ -39,7 +55,7 @@ function App() {
     };
 
     const pageTransition = {
-      type: 'tween',
+      type: 'tween' as const,
       duration: 0.2
     };
 
@@ -71,7 +87,7 @@ function App() {
       case 'downloads':
         return wrapPage('downloads', <PlaceholderPage title="Descargas" description="Gestiona tus descargas activas y cola de instalación" />);
       case 'achievements':
-        return wrapPage('achievements', <PlaceholderPage title="Logros" description="Visualiza tus logros y progreso en todos tus juegos" />);
+        return wrapPage('achievements', <Achievements />);
       case 'mods':
         return wrapPage('mods', <PlaceholderPage title="Mod Manager" description="Instala y gestiona mods para tus juegos favoritos" />);
       case 'cloud':
@@ -80,6 +96,30 @@ function App() {
         return wrapPage('dashboard', <Dashboard />);
     }
   };
+
+  // Show loading screen while checking auth
+  if (!isInitialized) {
+    return (
+      <div className="app">
+        <TitleBar />
+        <LoadingScreen />
+      </div>
+    );
+  }
+
+  // If Firebase is available but user is not logged in, show auth screen
+  if (isAvailable && !user) {
+    return (
+      <div className="app">
+        <TitleBar />
+        <AuthScreen />
+      </div>
+    );
+  }
+
+  // If Firebase is not available, still allow using the app (offline mode)
+  // But show a warning - or require login if you prefer strict mode
+  // For now, we'll require login if Firebase is available
 
   return (
     <div className="app">

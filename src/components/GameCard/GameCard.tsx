@@ -6,7 +6,6 @@ import {
     Clock,
     MoreVertical,
     Star,
-    Download,
     Trash2,
     Edit,
     ExternalLink
@@ -24,7 +23,7 @@ interface GameCardProps {
 export function GameCard({ game, variant = 'grid', onSelect }: GameCardProps) {
     const [showMenu, setShowMenu] = useState(false);
     const [isHovered, setIsHovered] = useState(false);
-    const { toggleFavorite, launchGame, deleteGame } = useGamesStore();
+    const { toggleFavorite, launchGame, deleteGame, setSelectedGame } = useGamesStore();
     const { openModal } = useUIStore();
 
     const formatPlaytime = (minutes: number) => {
@@ -187,7 +186,7 @@ export function GameCard({ game, variant = 'grid', onSelect }: GameCardProps) {
                         initial={{ opacity: 0, scale: 0.9, y: -10 }}
                         animate={{ opacity: 1, scale: 1, y: 0 }}
                     >
-                        <button onClick={() => { setShowMenu(false); openModal('edit-game'); }}>
+                        <button onClick={() => { setShowMenu(false); setSelectedGame(game); openModal('edit-game'); }}>
                             <Edit size={14} /> Editar
                         </button>
                         <button>
