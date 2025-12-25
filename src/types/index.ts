@@ -132,3 +132,6 @@ export interface AppNotification {
         onClick: () => void;
     };
 }
+
+// Social Types (re-export)
+export type { Notification, NotificationType, Friend, FriendRequest } from './social';

@@ -1,6 +1,6 @@
 import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { TitleBar, Sidebar, AuthScreen } from './components';
+import { TitleBar, Sidebar, AuthScreen, NotificationToast } from './components';
 import { Dashboard, Library, Settings, Profile, Catalog, Achievements } from './pages';
 import { useUIStore, useSettingsStore } from './stores';
 import { useAuthStore } from './stores/authStore';
@@ -132,6 +132,7 @@ function App() {
           </AnimatePresence>
         </main>
       </div>
+      <NotificationToast />
     </div>
   );
 }

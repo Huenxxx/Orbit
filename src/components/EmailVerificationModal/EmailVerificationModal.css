@@ -1,0 +1,342 @@
+.verification-modal-overlay {
+    position: fixed;
+    top: 0;
+    left: 0;
+    right: 0;
+    bottom: 0;
+    background: rgba(0, 0, 0, 0.85);
+    backdrop-filter: blur(12px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 2000;
+    padding: 20px;
+}
+
+.verification-modal {
+    background: linear-gradient(145deg, var(--card-bg) 0%, rgba(26, 26, 37, 0.98) 100%);
+    border-radius: 24px;
+    padding: 48px;
+    width: 100%;
+    max-width: 440px;
+    position: relative;
+    border: 1px solid rgba(125, 95, 255, 0.15);
+    box-shadow:
+        0 24px 80px rgba(0, 0, 0, 0.6),
+        0 0 0 1px rgba(125, 95, 255, 0.1),
+        0 0 100px rgba(125, 95, 255, 0.1);
+}
+
+.verification-close {
+    position: absolute;
+    top: 16px;
+    right: 16px;
+    background: rgba(255, 255, 255, 0.05);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: 10px;
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+    color: var(--text-secondary);
+    transition: all 0.2s ease;
+}
+
+.verification-close:hover {
+    background: rgba(239, 68, 68, 0.2);
+    border-color: rgba(239, 68, 68, 0.3);
+    color: #ef4444;
+}
+
+/* Header */
+.verification-header {
+    text-align: center;
+    margin-bottom: 32px;
+}
+
+.verification-icon {
+    width: 80px;
+    height: 80px;
+    margin: 0 auto 20px;
+    background: linear-gradient(135deg, rgba(125, 95, 255, 0.2) 0%, rgba(159, 122, 234, 0.1) 100%);
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--primary);
+    border: 2px solid rgba(125, 95, 255, 0.3);
+    animation: pulse-glow 2s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 20px rgba(125, 95, 255, 0.3);
+    }
+
+    50% {
+        box-shadow: 0 0 40px rgba(125, 95, 255, 0.5);
+    }
+}
+
+.verification-header h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: var(--text-primary);
+    margin: 0 0 12px 0;
+}
+
+.verification-header p {
+    font-size: 0.9rem;
+    color: var(--text-secondary);
+    line-height: 1.6;
+    margin: 0;
+}
+
+.verification-header strong {
+    display: block;
+    color: var(--primary);
+    margin-top: 8px;
+    font-weight: 600;
+}
+
+/* Code Input Container */
+.verification-code-container {
+    margin-bottom: 24px;
+}
+
+.code-inputs {
+    display: flex;
+    gap: 12px;
+    justify-content: center;
+}
+
+.code-input {
+    width: 50px;
+    height: 60px;
+    background: rgba(255, 255, 255, 0.03);
+    border: 2px solid rgba(255, 255, 255, 0.1);
+    border-radius: 14px;
+    text-align: center;
+    font-size: 1.5rem;
+    font-weight: 700;
+    font-family: 'Courier New', monospace;
+    color: var(--text-primary);
+    transition: all 0.2s ease;
+    caret-color: var(--primary);
+}
+
+.code-input:focus {
+    outline: none;
+    border-color: var(--primary);
+    background: rgba(125, 95, 255, 0.1);
+    box-shadow: 0 0 20px rgba(125, 95, 255, 0.2);
+}
+
+.code-input.filled {
+    border-color: rgba(125, 95, 255, 0.4);
+    background: rgba(125, 95, 255, 0.1);
+    color: var(--primary);
+}
+
+.code-input.error {
+    border-color: #ef4444;
+    background: rgba(239, 68, 68, 0.1);
+    animation: shake 0.5s ease;
+}
+
+@keyframes shake {
+
+    0%,
+    100% {
+        transform: translateX(0);
+    }
+
+    25% {
+        transform: translateX(-8px);
+    }
+
+    50% {
+        transform: translateX(8px);
+    }
+
+    75% {
+        transform: translateX(-8px);
+    }
+}
+
+.code-input:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+/* Error Message */
+.verification-error {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 8px;
+    margin-top: 16px;
+    padding: 12px 16px;
+    background: rgba(239, 68, 68, 0.1);
+    border: 1px solid rgba(239, 68, 68, 0.2);
+    border-radius: 10px;
+    color: #ef4444;
+    font-size: 0.85rem;
+}
+
+/* Submit Button */
+.verification-submit {
+    width: 100%;
+    padding: 16px 24px;
+    font-size: 1rem;
+    font-weight: 600;
+    gap: 8px;
+    margin-bottom: 20px;
+}
+
+.verification-submit:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Resend Section */
+.verification-resend {
+    text-align: center;
+    padding-top: 16px;
+    border-top: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.verification-resend p {
+    font-size: 0.85rem;
+    color: var(--text-secondary);
+    margin: 0 0 12px 0;
+}
+
+.resend-btn {
+    display: inline-flex;
+    align-items: center;
+    gap: 8px;
+    background: transparent;
+    border: 1px solid rgba(125, 95, 255, 0.3);
+    border-radius: 10px;
+    padding: 10px 20px;
+    color: var(--primary);
+    font-size: 0.9rem;
+    font-weight: 500;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.resend-btn:hover:not(:disabled) {
+    background: rgba(125, 95, 255, 0.1);
+    border-color: var(--primary);
+}
+
+.resend-btn:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+/* Success State */
+.verification-success {
+    text-align: center;
+    padding: 20px 0;
+}
+
+.success-icon {
+    position: relative;
+    width: 100px;
+    height: 100px;
+    margin: 0 auto 24px;
+    color: #10b981;
+}
+
+.success-icon>svg:first-child {
+    width: 100%;
+    height: 100%;
+    animation: success-pop 0.5s ease;
+}
+
+@keyframes success-pop {
+    0% {
+        transform: scale(0);
+    }
+
+    50% {
+        transform: scale(1.2);
+    }
+
+    100% {
+        transform: scale(1);
+    }
+}
+
+.sparkle {
+    position: absolute;
+    color: #fbbf24;
+    animation: sparkle-float 1s ease infinite;
+}
+
+.sparkle-1 {
+    top: -10px;
+    right: 0;
+    animation-delay: 0s;
+}
+
+.sparkle-2 {
+    top: 20px;
+    right: -20px;
+    animation-delay: 0.2s;
+}
+
+.sparkle-3 {
+    bottom: 10px;
+    right: -10px;
+    animation-delay: 0.4s;
+}
+
+@keyframes sparkle-float {
+
+    0%,
+    100% {
+        opacity: 1;
+        transform: translateY(0) rotate(0deg);
+    }
+
+    50% {
+        opacity: 0.5;
+        transform: translateY(-5px) rotate(10deg);
+    }
+}
+
+.verification-success h2 {
+    font-size: 1.5rem;
+    font-weight: 700;
+    color: #10b981;
+    margin: 0 0 12px 0;
+}
+
+.verification-success p {
+    font-size: 0.95rem;
+    color: var(--text-secondary);
+    margin: 0;
+}
+
+/* Spinner */
+.spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}

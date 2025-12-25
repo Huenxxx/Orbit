@@ -299,10 +299,22 @@
     justify-content: center;
     gap: var(--space-2);
     margin-top: var(--space-2);
+    transition: all var(--transition-fast);
+}
+
+.auth-screen .auth-submit.processing {
+    cursor: not-allowed;
+    opacity: 0.85;
+}
+
+.auth-screen .auth-submit:disabled {
+    cursor: not-allowed;
+    opacity: 0.7;
 }
 
 .auth-screen .spinner {
     animation: spin 1s linear infinite;
+    flex-shrink: 0;
 }
 
 /* Divider */
@@ -372,6 +384,45 @@
     border-radius: var(--radius-md);
     color: #34d399;
     font-size: var(--text-sm);
+}
+
+.auth-screen .auth-validation-errors {
+    padding: var(--space-4);
+    background: rgba(251, 146, 60, 0.1);
+    border: 1px solid rgba(251, 146, 60, 0.3);
+    border-radius: var(--radius-md);
+    font-size: var(--text-sm);
+}
+
+.auth-screen .auth-validation-errors .validation-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    color: #fb923c;
+    font-weight: 600;
+    margin-bottom: var(--space-3);
+}
+
+.auth-screen .auth-validation-errors ul {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.auth-screen .auth-validation-errors li {
+    color: #fdba74;
+    padding-left: var(--space-4);
+    position: relative;
+}
+
+.auth-screen .auth-validation-errors li::before {
+    content: '•';
+    position: absolute;
+    left: var(--space-1);
+    color: #fb923c;
 }
 
 /* Footer */

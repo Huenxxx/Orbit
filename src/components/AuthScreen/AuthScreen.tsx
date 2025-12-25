@@ -14,7 +14,19 @@ import {
     Sparkles
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
+import { EmailVerificationModal } from '../EmailVerificationModal/EmailVerificationModal';
 import './AuthScreen.css';
+
+// Declare global ipcRenderer for Electron
+declare global {
+    interface Window {
+        require?: (module: string) => {
+            ipcRenderer: {
+                invoke: (channel: string, data?: unknown) => Promise<unknown>;
+            };
+        };
+    }
+}
 
 type AuthMode = 'login' | 'register' | 'forgot';
 
@@ -25,26 +37,161 @@ export function AuthScreen() {
     const [username, setUsername] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
+    const [showVerificationModal, setShowVerificationModal] = useState(false);
+    const [pendingRegistration, setPendingRegistration] = useState<{
+        email: string;
+        password: string;
+        username: string;
+    } | null>(null);
 
-    const { login, register, loginWithGoogle, resetPassword, isLoading, error, clearError, isAvailable } = useAuthStore();
+    // Validation states
+    const [validationErrors, setValidationErrors] = useState<string[]>([]);
+
+    // Processing state to prevent multiple submissions
+    const [isProcessing, setIsProcessing] = useState(false);
+    const [processingMessage, setProcessingMessage] = useState('');
+
+    const { loginWithUsername, register, loginWithGoogle, resetPassword, isLoading, error, clearError, isAvailable, checkUsernameAvailable } = useAuthStore();
+
+    // Initialize ipcRenderer for Electron
+    const ipcRenderer = typeof window !== 'undefined' && window.require
+        ? window.require('electron').ipcRenderer
+        : null;
+
+    // Validation function for registration
+    const validateRegistration = async (): Promise<{ isValid: boolean; errors: string[] }> => {
+        const { validateEmail, validatePassword, validateUsername } = await import('../../utils/validation');
+        const errors: string[] = [];
+
+        // Validate email
+        const emailResult = validateEmail(email);
+        if (!emailResult.isValid && emailResult.error) {
+            errors.push(emailResult.error);
+        }
+
+        // Validate password
+        const passwordResult = validatePassword(password);
+        if (!passwordResult.isValid) {
+            errors.push(...passwordResult.errors);
+        }
+
+        // Validate username format
+        const usernameResult = validateUsername(username);
+        if (!usernameResult.isValid && usernameResult.error) {
+            errors.push(usernameResult.error);
+        }
+
+        // Check if username is available
+        if (usernameResult.isValid) {
+            const available = await checkUsernameAvailable(username);
+            if (!available) {
+                errors.push('Este nombre de usuario ya está en uso');
+            }
+        }
+
+        return { isValid: errors.length === 0, errors };
+    };
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
+
+        // Prevent multiple submissions
+        if (isProcessing || isLoading) return;
+
         clearError();
         setSuccessMessage('');
+        setValidationErrors([]);
 
         try {
             if (mode === 'login') {
-                await login(email, password);
+                // Login with username instead of email
+                await loginWithUsername(username, password);
             } else if (mode === 'register') {
-                await register(email, password, username);
+                setIsProcessing(true);
+                setProcessingMessage('Validando datos...');
+
+                // Validate all fields before proceeding
+                const validation = await validateRegistration();
+                if (!validation.isValid) {
+                    setValidationErrors(validation.errors);
+                    setIsProcessing(false);
+                    setProcessingMessage('');
+                    return;
+                }
+
+                setProcessingMessage('Enviando código de verificación...');
+
+                // Store registration details
+                const registrationData = { email, password, username };
+                setPendingRegistration(registrationData);
+
+                // Check if we're in Electron and can send emails
+                if (ipcRenderer) {
+                    try {
+                        const result = await ipcRenderer.invoke('send-verification-email', {
+                            email,
+                            username
+                        }) as { success: boolean; error?: string };
+
+                        if (result.success) {
+                            // Email sent, show verification modal
+                            setShowVerificationModal(true);
+                        } else {
+                            // Email failed, proceed with registration anyway
+                            console.warn('Could not send verification email:', result.error);
+                            await performRegistration(registrationData);
+                        }
+                    } catch (err) {
+                        console.error('Error sending verification email:', err);
+                        // Email service failed, proceed with registration
+                        await performRegistration(registrationData);
+                    }
+                } else {
+                    // Browser mode - show verification modal anyway (demo mode)
+                    setShowVerificationModal(true);
+                }
+
+                setIsProcessing(false);
+                setProcessingMessage('');
             } else if (mode === 'forgot') {
                 await resetPassword(email);
                 setSuccessMessage('Se ha enviado un email para restablecer tu contraseña');
             }
         } catch (err) {
             // Error is handled by the store
+            setIsProcessing(false);
+            setProcessingMessage('');
         }
+    };
+
+    const performRegistration = async (data: { email: string; password: string; username: string }) => {
+        try {
+            await register(data.email, data.password, data.username);
+            // Send welcome email after successful registration
+            if (ipcRenderer) {
+                await ipcRenderer.invoke('send-welcome-email', {
+                    email: data.email,
+                    username: data.username
+                });
+            }
+            setShowVerificationModal(false);
+            setPendingRegistration(null);
+        } catch (err) {
+            // Error is handled by the store
+            setShowVerificationModal(false);
+            setPendingRegistration(null);
+        }
+    };
+
+    const handleVerificationSuccess = async () => {
+        if (pendingRegistration) {
+            await performRegistration(pendingRegistration);
+        }
+    };
+
+    const handleVerificationClose = () => {
+        setShowVerificationModal(false);
+        setPendingRegistration(null);
     };
 
     const handleGoogleLogin = async () => {
@@ -169,6 +316,28 @@ export function AuthScreen() {
                         )}
                     </AnimatePresence>
 
+                    {/* Validation Errors */}
+                    <AnimatePresence>
+                        {validationErrors.length > 0 && (
+                            <motion.div
+                                className="auth-validation-errors"
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                            >
+                                <div className="validation-header">
+                                    <AlertCircle size={16} />
+                                    <span>Por favor corrige los siguientes errores:</span>
+                                </div>
+                                <ul>
+                                    {validationErrors.map((err, index) => (
+                                        <li key={index}>{err}</li>
+                                    ))}
+                                </ul>
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
+
                     {/* Success Message */}
                     <AnimatePresence>
                         {successMessage && (
@@ -184,9 +353,9 @@ export function AuthScreen() {
                         )}
                     </AnimatePresence>
 
-                    {/* Username (only for register) */}
+                    {/* Username (for login and register) */}
                     <AnimatePresence>
-                        {mode === 'register' && (
+                        {(mode === 'login' || mode === 'register') && (
                             <motion.div
                                 className="input-group"
                                 initial={{ opacity: 0, height: 0 }}
@@ -199,24 +368,33 @@ export function AuthScreen() {
                                     placeholder="Nombre de usuario"
                                     value={username}
                                     onChange={(e) => setUsername(e.target.value)}
-                                    required={mode === 'register'}
+                                    required={mode === 'login' || mode === 'register'}
                                     minLength={3}
                                 />
                             </motion.div>
                         )}
                     </AnimatePresence>
 
-                    {/* Email */}
-                    <div className="input-group">
-                        <Mail size={18} className="input-icon" />
-                        <input
-                            type="email"
-                            placeholder="Email"
-                            value={email}
-                            onChange={(e) => setEmail(e.target.value)}
-                            required
-                        />
-                    </div>
+                    {/* Email (only for register and forgot) */}
+                    <AnimatePresence>
+                        {(mode === 'register' || mode === 'forgot') && (
+                            <motion.div
+                                className="input-group"
+                                initial={{ opacity: 0, height: 0 }}
+                                animate={{ opacity: 1, height: 'auto' }}
+                                exit={{ opacity: 0, height: 0 }}
+                            >
+                                <Mail size={18} className="input-icon" />
+                                <input
+                                    type="email"
+                                    placeholder="Email"
+                                    value={email}
+                                    onChange={(e) => setEmail(e.target.value)}
+                                    required={mode === 'register' || mode === 'forgot'}
+                                />
+                            </motion.div>
+                        )}
+                    </AnimatePresence>
 
                     {/* Password (not for forgot) */}
                     <AnimatePresence>
@@ -260,13 +438,16 @@ export function AuthScreen() {
                     {/* Submit Button */}
                     <motion.button
                         type="submit"
-                        className="btn btn-primary auth-submit"
-                        disabled={isLoading}
-                        whileHover={{ scale: 1.02 }}
-                        whileTap={{ scale: 0.98 }}
+                        className={`btn btn-primary auth-submit ${isProcessing ? 'processing' : ''}`}
+                        disabled={isLoading || isProcessing}
+                        whileHover={!isProcessing && !isLoading ? { scale: 1.02 } : {}}
+                        whileTap={!isProcessing && !isLoading ? { scale: 0.98 } : {}}
                     >
-                        {isLoading ? (
-                            <Loader2 size={20} className="spinner" />
+                        {(isLoading || isProcessing) ? (
+                            <>
+                                <Loader2 size={20} className="spinner" />
+                                {processingMessage || 'Cargando...'}
+                            </>
                         ) : (
                             <>
                                 {mode === 'login' && 'Iniciar sesión'}
@@ -288,7 +469,7 @@ export function AuthScreen() {
                                 type="button"
                                 className="btn btn-google"
                                 onClick={handleGoogleLogin}
-                                disabled={isLoading}
+                                disabled={isLoading || isProcessing}
                                 whileHover={{ scale: 1.02 }}
                                 whileTap={{ scale: 0.98 }}
                             >
@@ -349,6 +530,17 @@ export function AuthScreen() {
                     </li>
                 </ul>
             </motion.div>
+
+            {/* Email Verification Modal */}
+            {pendingRegistration && (
+                <EmailVerificationModal
+                    isOpen={showVerificationModal}
+                    onClose={handleVerificationClose}
+                    onVerified={handleVerificationSuccess}
+                    email={pendingRegistration.email}
+                    username={pendingRegistration.username}
+                />
+            )}
         </div>
     );
 }

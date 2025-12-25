@@ -16,10 +16,12 @@ interface AuthState {
     initialize: () => void;
     register: (email: string, password: string, username: string) => Promise<void>;
     login: (email: string, password: string) => Promise<void>;
+    loginWithUsername: (username: string, password: string) => Promise<void>;
     loginWithGoogle: () => Promise<void>;
     logout: () => Promise<void>;
     resetPassword: (email: string) => Promise<void>;
     updateProfile: (data: Partial<UserData>) => Promise<void>;
+    checkUsernameAvailable: (username: string) => Promise<boolean>;
     clearError: () => void;
 }
 
@@ -90,6 +92,30 @@ export const useAuthStore = create<AuthState>((set, get) => ({
         }
     },
 
+    loginWithUsername: async (username, password) => {
+        if (!authService.isAvailable()) {
+            set({ error: 'Firebase no está configurado. Configura las credenciales para usar esta función.' });
+            throw new Error('Firebase no configurado');
+        }
+
+        set({ isLoading: true, error: null });
+        try {
+            // First, get the email associated with this username
+            const email = await authService.getEmailByUsername(username);
+            if (!email) {
+                throw new Error('Usuario no encontrado');
+            }
+
+            // Then login with that email
+            await authService.login(email, password);
+            set({ isLoading: false });
+            // Auth state listener will update the user
+        } catch (error: any) {
+            set({ error: error.message, isLoading: false });
+            throw error;
+        }
+    },
+
     loginWithGoogle: async () => {
         if (!authService.isAvailable()) {
             set({ error: 'Firebase no está configurado. Configura las credenciales para usar esta función.' });
@@ -149,6 +175,10 @@ export const useAuthStore = create<AuthState>((set, get) => ({
             set({ error: error.message, isLoading: false });
             throw error;
         }
+    },
+
+    checkUsernameAvailable: async (username: string) => {
+        return await authService.checkUsernameAvailable(username);
     },
 
     clearError: () => set({ error: null })

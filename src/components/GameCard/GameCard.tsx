@@ -12,6 +12,7 @@ import {
 } from 'lucide-react';
 import type { Game } from '../../types';
 import { useGamesStore, useUIStore } from '../../stores';
+import { useNotificationStore } from '../../stores/notificationStore';
 import './GameCard.css';
 
 interface GameCardProps {
@@ -25,6 +26,7 @@ export function GameCard({ game, variant = 'grid', onSelect }: GameCardProps) {
     const [isHovered, setIsHovered] = useState(false);
     const { toggleFavorite, launchGame, deleteGame, setSelectedGame } = useGamesStore();
     const { openModal } = useUIStore();
+    const { showGameStarted, showError } = useNotificationStore();
 
     const formatPlaytime = (minutes: number) => {
         if (minutes < 60) return `${minutes}m`;
@@ -36,7 +38,10 @@ export function GameCard({ game, variant = 'grid', onSelect }: GameCardProps) {
     const handlePlay = async (e: React.MouseEvent) => {
         e.stopPropagation();
         const result = await launchGame(game.id);
-        if (!result.success) {
+        if (result.success) {
+            showGameStarted(game.title, game.coverImage);
+        } else {
+            showError('Error al iniciar', result.error || 'No se pudo iniciar el juego');
             console.error('Failed to launch game:', result.error);
         }
     };

@@ -9,12 +9,22 @@ import {
     Loader2,
     AlertCircle,
     ArrowRight,
-    CheckCircle,
-    CloudOff,
-    ExternalLink
+    CheckCircle
 } from 'lucide-react';
 import { useAuthStore } from '../../stores/authStore';
+import { EmailVerificationModal } from '../EmailVerificationModal/EmailVerificationModal';
 import './AuthModal.css';
+
+// Declare global ipcRenderer for Electron
+declare global {
+    interface Window {
+        require?: (module: string) => {
+            ipcRenderer: {
+                invoke: (channel: string, data?: unknown) => Promise<unknown>;
+            };
+        };
+    }
+}
 
 interface AuthModalProps {
     isOpen: boolean;
@@ -30,8 +40,19 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
     const [username, setUsername] = useState('');
     const [showPassword, setShowPassword] = useState(false);
     const [successMessage, setSuccessMessage] = useState('');
+    const [showVerificationModal, setShowVerificationModal] = useState(false);
+    const [pendingRegistration, setPendingRegistration] = useState<{
+        email: string;
+        password: string;
+        username: string;
+    } | null>(null);
 
-    const { login, register, loginWithGoogle, resetPassword, isLoading, error, clearError, isAvailable } = useAuthStore();
+    const { login, register, loginWithGoogle, resetPassword, isLoading, error, clearError } = useAuthStore();
+
+    // Initialize ipcRenderer for Electron
+    const ipcRenderer = typeof window !== 'undefined' && window.require
+        ? window.require('electron').ipcRenderer
+        : null;
 
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
@@ -43,8 +64,36 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                 await login(email, password);
                 onClose();
             } else if (mode === 'register') {
-                await register(email, password, username);
-                onClose();
+                // Store registration details
+                const registrationData = { email, password, username };
+                setPendingRegistration(registrationData);
+
+                // Check if we're in Electron and can send emails
+                if (ipcRenderer) {
+                    try {
+                        const result = await ipcRenderer.invoke('send-verification-email', {
+                            email,
+                            username
+                        }) as { success: boolean; error?: string };
+
+                        if (result.success) {
+                            // Email sent, show verification modal
+                            setShowVerificationModal(true);
+                        } else {
+                            // Email failed, proceed with registration anyway
+                            console.warn('Could not send verification email:', result.error);
+                            await performRegistration(registrationData);
+                        }
+                    } catch (err) {
+                        console.error('Error sending verification email:', err);
+                        // Email service failed, proceed with registration
+                        await performRegistration(registrationData);
+                    }
+                } else {
+                    // Browser mode - show verification modal anyway (demo mode)
+                    // In production, you would want to skip verification in browser
+                    setShowVerificationModal(true);
+                }
             } else if (mode === 'forgot') {
                 await resetPassword(email);
                 setSuccessMessage('Se ha enviado un email para restablecer tu contraseña');
@@ -52,6 +101,37 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
         } catch (err) {
             // Error is handled by the store
         }
+    };
+
+    const performRegistration = async (data: { email: string; password: string; username: string }) => {
+        try {
+            await register(data.email, data.password, data.username);
+            // Send welcome email after successful registration
+            if (ipcRenderer) {
+                await ipcRenderer.invoke('send-welcome-email', {
+                    email: data.email,
+                    username: data.username
+                });
+            }
+            setShowVerificationModal(false);
+            setPendingRegistration(null);
+            onClose();
+        } catch (err) {
+            // Error is handled by the store
+            setShowVerificationModal(false);
+            setPendingRegistration(null);
+        }
+    };
+
+    const handleVerificationSuccess = async () => {
+        if (pendingRegistration) {
+            await performRegistration(pendingRegistration);
+        }
+    };
+
+    const handleVerificationClose = () => {
+        setShowVerificationModal(false);
+        setPendingRegistration(null);
     };
 
     const handleGoogleLogin = async () => {
@@ -257,6 +337,17 @@ export function AuthModal({ isOpen, onClose }: AuthModalProps) {
                     </div>
                 </motion.div>
             </motion.div>
+
+            {/* Email Verification Modal */}
+            {pendingRegistration && (
+                <EmailVerificationModal
+                    isOpen={showVerificationModal}
+                    onClose={handleVerificationClose}
+                    onVerified={handleVerificationSuccess}
+                    email={pendingRegistration.email}
+                    username={pendingRegistration.username}
+                />
+            )}
         </AnimatePresence>
     );
 }

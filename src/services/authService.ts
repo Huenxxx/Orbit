@@ -15,7 +15,11 @@ import {
     setDoc,
     getDoc,
     updateDoc,
-    serverTimestamp
+    serverTimestamp,
+    collection,
+    query,
+    where,
+    getDocs
 } from 'firebase/firestore';
 import { auth, db, isFirebaseConfigured } from './firebase';
 import type { Game, AppSettings } from '../types';
@@ -25,9 +29,12 @@ export interface UserData {
     uid: string;
     email: string;
     username: string;
+    displayUsername?: string; // Original format with casing
     avatar: string | null;
     createdAt: any;
     lastSeen: any;
+    status?: 'online' | 'offline' | 'away' | 'busy' | 'in-game';
+    currentGame?: string;
 }
 
 class AuthService {
@@ -55,6 +62,42 @@ class AuthService {
     // Check if user is authenticated
     isAuthenticated(): boolean {
         return !!auth?.currentUser;
+    }
+
+    // Check if username is already taken
+    async checkUsernameAvailable(username: string): Promise<boolean> {
+        if (!db) return true; // If no Firestore, assume available
+
+        try {
+            const usersRef = collection(db, 'users');
+            const q = query(usersRef, where('username', '==', username.toLowerCase()));
+            const querySnapshot = await getDocs(q);
+            return querySnapshot.empty; // true if no documents found (username is available)
+        } catch (error) {
+            console.warn('Could not check username availability:', error);
+            return true; // On error, allow registration attempt
+        }
+    }
+
+    // Get email by username for login
+    async getEmailByUsername(username: string): Promise<string | null> {
+        if (!db) return null;
+
+        try {
+            const usersRef = collection(db, 'users');
+            const q = query(usersRef, where('username', '==', username.toLowerCase()));
+            const querySnapshot = await getDocs(q);
+
+            if (querySnapshot.empty) {
+                return null;
+            }
+
+            const userData = querySnapshot.docs[0].data();
+            return userData.email || null;
+        } catch (error) {
+            console.error('Error getting email by username:', error);
+            return null;
+        }
     }
 
     // Register with email and password
@@ -159,10 +202,11 @@ class AuthService {
         if (!db) return;
 
         const userRef = doc(db, 'users', user.uid);
-        const userData: UserData = {
+        const userData = {
             uid: user.uid,
             email: user.email || '',
-            username: username,
+            username: username.toLowerCase(), // Lowercase for searching
+            displayUsername: username, // Original format for display
             avatar: user.photoURL,
             createdAt: serverTimestamp(),
             lastSeen: serverTimestamp()

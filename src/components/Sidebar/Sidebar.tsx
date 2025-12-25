@@ -18,6 +18,7 @@ import {
 import { useUIStore } from '../../stores';
 import { useAuthStore } from '../../stores/authStore';
 import { AuthModal } from '../AuthModal/AuthModal';
+import { FriendsList } from '../FriendsList/FriendsList';
 import './Sidebar.css';
 
 interface NavItem {
@@ -96,6 +97,11 @@ export function Sidebar() {
                             {secondaryNavItems.map(renderNavItem)}
                         </div>
                     </nav>
+
+                    {/* Friends List - only when not collapsed and logged in */}
+                    {!sidebarCollapsed && user && (
+                        <FriendsList />
+                    )}
 
                     {/* Bottom Navigation */}
                     <div className="sidebar-bottom">

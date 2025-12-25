@@ -1,5 +1,22 @@
 import { create } from 'zustand';
 
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const electronRequire = (typeof window !== 'undefined' && (window as any).require) as ((module: string) => any) | undefined;
+
+// Types for Steam API responses
+interface SteamApiResponse {
+    success: boolean;
+    error?: string;
+    games?: any[];
+    profile?: {
+        steamId: string;
+        personaName: string;
+        avatarFull: string;
+        avatarMedium: string;
+        avatar: string;
+    };
+}
+
 // Types for linked accounts
 export interface SteamGame {
     appid: number;
@@ -9,6 +26,9 @@ export interface SteamGame {
     img_icon_url: string;
     img_logo_url: string;
     has_community_visible_stats?: boolean;
+    iconUrl?: string;
+    headerUrl?: string;
+    capsuleUrl?: string;
 }
 
 export interface EpicGame {
@@ -32,6 +52,9 @@ interface LinkedAccountsState {
     epicAccount: LinkedAccount | null;
     steamGames: SteamGame[];
     epicGames: EpicGame[];
+    installedSteamGames: InstalledSteamGame[];
+    steamInstalled: boolean;
+    steamPath: string | null;
     isLinkingSteam: boolean;
     isLinkingEpic: boolean;
     isSyncingSteam: boolean;
@@ -40,12 +63,47 @@ interface LinkedAccountsState {
 
     // Actions
     linkSteamAccount: (steamId: string) => Promise<boolean>;
+    linkSteamAccountAuto: () => Promise<boolean>;
     linkEpicAccount: () => Promise<boolean>;
     unlinkSteamAccount: () => void;
     unlinkEpicAccount: () => void;
     syncSteamGames: () => Promise<void>;
     syncEpicGames: () => Promise<void>;
     loadLinkedAccounts: () => void;
+    detectLocalSteam: () => Promise<void>;
+    launchSteamGame: (appId: number) => Promise<boolean>;
+    installSteamGame: (appId: number) => Promise<boolean>;
+}
+
+// Installed Steam Game from local detection
+export interface InstalledSteamGame {
+    appid: number;
+    name: string;
+    installdir: string | null;
+    sizeOnDisk: number;
+    lastUpdated: number;
+    buildId: string | null;
+    installPath: string;
+    libraryPath: string;
+    headerUrl: string;
+    capsuleUrl: string;
+    isInstalled: boolean;
+}
+
+// Steam local info response
+interface SteamLocalInfo {
+    success: boolean;
+    error?: string;
+    steamInstalled: boolean;
+    steamPath?: string;
+    isRunning?: boolean;
+    user?: {
+        steamId: string;
+        personaName: string;
+        timestamp: number;
+        mostRecent: boolean;
+    };
+    installedGames?: InstalledSteamGame[];
 }
 
 // Storage keys
@@ -59,6 +117,9 @@ export const useLinkedAccountsStore = create<LinkedAccountsState>((set, get) => 
     epicAccount: null,
     steamGames: [],
     epicGames: [],
+    installedSteamGames: [],
+    steamInstalled: false,
+    steamPath: null,
     isLinkingSteam: false,
     isLinkingEpic: false,
     isSyncingSteam: false,
@@ -104,15 +165,27 @@ export const useLinkedAccountsStore = create<LinkedAccountsState>((set, get) => 
             // Validate Steam ID format (should be 17 digits)
             const cleanSteamId = steamId.trim();
 
-            // Try to fetch user profile to validate
-            // Note: In production, this would be done through your backend
-            // For now, we'll create a mock connection
+            // Check if we're in Electron environment
+            const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
+
+            let username = `Steam User ${cleanSteamId.slice(-4)}`;
+            let avatarUrl = 'https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg';
+
+            // Try to fetch real profile from Steam API
+            if (ipcRenderer) {
+                const profileResult = await ipcRenderer.invoke('steam-get-player-summary', cleanSteamId) as SteamApiResponse;
+
+                if (profileResult.success && profileResult.profile) {
+                    username = profileResult.profile.personaName;
+                    avatarUrl = profileResult.profile.avatarFull || profileResult.profile.avatarMedium || avatarUrl;
+                }
+            }
 
             const account: LinkedAccount = {
                 platform: 'steam',
                 userId: cleanSteamId,
-                username: `Steam User ${cleanSteamId.slice(-4)}`,
-                avatarUrl: `https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg`,
+                username: username,
+                avatarUrl: avatarUrl,
                 linkedAt: new Date().toISOString()
             };
 
@@ -124,6 +197,7 @@ export const useLinkedAccountsStore = create<LinkedAccountsState>((set, get) => 
 
             return true;
         } catch (error) {
+            console.error('Error linking Steam account:', error);
             set({ error: (error as Error).message, isLinkingSteam: false });
             return false;
         }
@@ -176,58 +250,37 @@ export const useLinkedAccountsStore = create<LinkedAccountsState>((set, get) => 
         set({ isSyncingSteam: true, error: null });
 
         try {
-            // In a real implementation, you would call your backend API
-            // which would fetch games from Steam Web API
-            // For demo purposes, we'll use mock data
+            // Check if we're in Electron environment
+            const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
 
-            const mockSteamGames: SteamGame[] = [
-                {
-                    appid: 730,
-                    name: "Counter-Strike 2",
-                    playtime_forever: 12540,
-                    img_icon_url: "8dbc71957312bbd3baea65848b545be9eae2a355",
-                    img_logo_url: "d0595ff02f5c79fd19b06f4d6165c3fda2372820"
-                },
-                {
-                    appid: 570,
-                    name: "Dota 2",
-                    playtime_forever: 8760,
-                    img_icon_url: "0bbb630d63262dd66d2fdd0f7d37e8661a410075",
-                    img_logo_url: "d4f836839254be08d8e9dd333ecc9a01782c26d2"
-                },
-                {
-                    appid: 440,
-                    name: "Team Fortress 2",
-                    playtime_forever: 3420,
-                    img_icon_url: "e3f595a92552da3d664ad00277fad2107345f748",
-                    img_logo_url: "07385eb55b5ba974aebbe74d3c99626bda7920b8"
-                },
-                {
-                    appid: 1091500,
-                    name: "Cyberpunk 2077",
-                    playtime_forever: 1850,
-                    img_icon_url: "c4bf3a8da602b04dd9e78b93b5c9499d9898b248",
-                    img_logo_url: "5e0e6c7389a4893987e4cbe0a6c7e45e9dd1c34c"
-                },
-                {
-                    appid: 1245620,
-                    name: "Elden Ring",
-                    playtime_forever: 2340,
-                    img_icon_url: "6bb0ff78a29c667396c848a0e4ee9a1108bc8f6e",
-                    img_logo_url: "6bb0ff78a29c667396c848a0e4ee9a1108bc8f6e"
-                },
-                {
-                    appid: 892970,
-                    name: "Valheim",
-                    playtime_forever: 890,
-                    img_icon_url: "6bb0ff78a29c667396c848a0e4ee9a1108bc8f6e",
-                    img_logo_url: "6bb0ff78a29c667396c848a0e4ee9a1108bc8f6e"
-                }
-            ];
+            if (!ipcRenderer) {
+                throw new Error('Esta función solo está disponible en la aplicación de escritorio');
+            }
 
-            localStorage.setItem(STORAGE_KEY_STEAM_GAMES, JSON.stringify(mockSteamGames));
+            // Fetch real games from Steam API
+            const result = await ipcRenderer.invoke('steam-get-owned-games', steamAccount.userId) as SteamApiResponse;
+
+            if (!result.success || !result.games) {
+                throw new Error(result.error || 'Error al obtener juegos de Steam');
+            }
+
+            const steamGames: SteamGame[] = result.games.map((game: any) => ({
+                appid: game.appid,
+                name: game.name,
+                playtime_forever: game.playtime_forever,
+                playtime_2weeks: game.playtime_2weeks,
+                img_icon_url: game.img_icon_url,
+                img_logo_url: game.img_logo_url || '',
+                has_community_visible_stats: game.has_community_visible_stats,
+                // Additional URLs for display
+                iconUrl: game.iconUrl,
+                headerUrl: game.headerUrl,
+                capsuleUrl: game.capsuleUrl
+            }));
+
+            localStorage.setItem(STORAGE_KEY_STEAM_GAMES, JSON.stringify(steamGames));
             set({
-                steamGames: mockSteamGames,
+                steamGames: steamGames,
                 isSyncingSteam: false,
                 steamAccount: {
                     ...steamAccount,
@@ -240,6 +293,7 @@ export const useLinkedAccountsStore = create<LinkedAccountsState>((set, get) => 
             localStorage.setItem(STORAGE_KEY_STEAM, JSON.stringify(updatedAccount));
 
         } catch (error) {
+            console.error('Error syncing Steam games:', error);
             set({ error: (error as Error).message, isSyncingSteam: false });
         }
     },
@@ -301,6 +355,134 @@ export const useLinkedAccountsStore = create<LinkedAccountsState>((set, get) => 
 
         } catch (error) {
             set({ error: (error as Error).message, isSyncingEpic: false });
+        }
+    },
+
+    // Detect local Steam installation and get user info
+    detectLocalSteam: async () => {
+        try {
+            const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
+
+            if (!ipcRenderer) {
+                set({ steamInstalled: false, error: 'Solo disponible en la aplicación de escritorio' });
+                return;
+            }
+
+            const result = await ipcRenderer.invoke('steam-get-local-info') as SteamLocalInfo;
+
+            if (result.success) {
+                set({
+                    steamInstalled: result.steamInstalled,
+                    steamPath: result.steamPath || null,
+                    installedSteamGames: result.installedGames || [],
+                    error: null
+                });
+
+                // If we found a logged-in user and no account is linked, auto-link
+                if (result.user && !get().steamAccount) {
+                    await get().linkSteamAccountAuto();
+                }
+            } else {
+                set({
+                    steamInstalled: false,
+                    error: result.error || 'No se pudo detectar Steam'
+                });
+            }
+        } catch (error) {
+            console.error('Error detecting local Steam:', error);
+            set({ steamInstalled: false, error: (error as Error).message });
+        }
+    },
+
+    // Auto-link Steam account using local installation
+    linkSteamAccountAuto: async () => {
+        set({ isLinkingSteam: true, error: null });
+
+        try {
+            const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
+
+            if (!ipcRenderer) {
+                throw new Error('Solo disponible en la aplicación de escritorio');
+            }
+
+            // Get local Steam info
+            const localInfo = await ipcRenderer.invoke('steam-get-local-info') as SteamLocalInfo;
+
+            if (!localInfo.success || !localInfo.user) {
+                // Open Steam so user can log in
+                await ipcRenderer.invoke('steam-open-login');
+                throw new Error('Por favor, inicia sesión en Steam y vuelve a intentarlo');
+            }
+
+            const steamId = localInfo.user.steamId;
+            let username = localInfo.user.personaName;
+            let avatarUrl = 'https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg';
+
+            // Try to get full profile from Steam API for better avatar
+            const profileResult = await ipcRenderer.invoke('steam-get-player-summary', steamId) as SteamApiResponse;
+
+            if (profileResult.success && profileResult.profile) {
+                username = profileResult.profile.personaName;
+                avatarUrl = profileResult.profile.avatarFull || profileResult.profile.avatarMedium || avatarUrl;
+            }
+
+            const account: LinkedAccount = {
+                platform: 'steam',
+                userId: steamId,
+                username: username,
+                avatarUrl: avatarUrl,
+                linkedAt: new Date().toISOString()
+            };
+
+            localStorage.setItem(STORAGE_KEY_STEAM, JSON.stringify(account));
+            set({
+                steamAccount: account,
+                isLinkingSteam: false,
+                installedSteamGames: localInfo.installedGames || []
+            });
+
+            // Sync games from Steam API
+            await get().syncSteamGames();
+
+            return true;
+        } catch (error) {
+            console.error('Error auto-linking Steam:', error);
+            set({ error: (error as Error).message, isLinkingSteam: false });
+            return false;
+        }
+    },
+
+    // Launch a Steam game
+    launchSteamGame: async (appId: number) => {
+        try {
+            const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
+
+            if (!ipcRenderer) {
+                throw new Error('Solo disponible en la aplicación de escritorio');
+            }
+
+            const result = await ipcRenderer.invoke('steam-launch-game', appId);
+            return result.success;
+        } catch (error) {
+            console.error('Error launching game:', error);
+            return false;
+        }
+    },
+
+    // Install a Steam game
+    installSteamGame: async (appId: number) => {
+        try {
+            const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
+
+            if (!ipcRenderer) {
+                throw new Error('Solo disponible en la aplicación de escritorio');
+            }
+
+            const result = await ipcRenderer.invoke('steam-install-game', appId);
+            return result.success;
+        } catch (error) {
+            console.error('Error installing game:', error);
+            return false;
         }
     }
 }));
