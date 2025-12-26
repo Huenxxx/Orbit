@@ -340,9 +340,11 @@ interface UIState {
     currentPage: string;
     modalOpen: string | null;
     notifications: { id: string; type: string; message: string }[];
+    gameDetailsData: unknown | null;
 
     toggleSidebar: () => void;
     setCurrentPage: (page: string) => void;
+    navigateTo: (page: string, data?: unknown) => void;
     openModal: (modalId: string) => void;
     closeModal: () => void;
     addNotification: (type: string, message: string) => void;
@@ -354,9 +356,11 @@ export const useUIStore = create<UIState>((set, get) => ({
     currentPage: 'dashboard',
     modalOpen: null,
     notifications: [],
+    gameDetailsData: null,
 
     toggleSidebar: () => set({ sidebarCollapsed: !get().sidebarCollapsed }),
     setCurrentPage: (page) => set({ currentPage: page }),
+    navigateTo: (page, data) => set({ currentPage: page, gameDetailsData: data ?? null }),
     openModal: (modalId) => set({ modalOpen: modalId }),
     closeModal: () => set({ modalOpen: null }),
 

@@ -4,3 +4,7 @@ export { Settings } from './Settings/Settings';
 export { Profile } from './Profile/Profile';
 export { Catalog } from './Catalog/Catalog';
 export { Achievements } from './Achievements/Achievements';
+export { GameDetails } from './GameDetails/GameDetails';
+export { Downloads } from './Downloads/Downloads';
+
+

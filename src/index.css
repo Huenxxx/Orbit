@@ -154,6 +154,22 @@ body {
   flex-direction: column;
 }
 
+/* Modal Portal - Portal target for modals */
+#modal-portal {
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  z-index: 9999;
+}
+
+#modal-portal:empty {
+  display: none;
+}
+
+#modal-portal>* {
+  pointer-events: auto;
+}
+
 /* ===== Typography ===== */
 h1,
 h2,

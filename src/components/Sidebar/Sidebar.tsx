@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useMemo } from 'react';
 import {
     LayoutDashboard,
     Library,
@@ -17,6 +17,7 @@ import {
 } from 'lucide-react';
 import { useUIStore } from '../../stores';
 import { useAuthStore } from '../../stores/authStore';
+import { useDownloadsStore } from '../../stores/downloadsStore';
 import { AuthModal } from '../AuthModal/AuthModal';
 import { FriendsList } from '../FriendsList/FriendsList';
 import './Sidebar.css';
@@ -28,27 +29,30 @@ interface NavItem {
     badge?: number;
 }
 
-const mainNavItems: NavItem[] = [
-    { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
-    { id: 'library', label: 'Biblioteca', icon: <Library size={20} /> },
-    { id: 'catalog', label: 'Catálogo', icon: <Search size={20} /> },
-    { id: 'downloads', label: 'Descargas', icon: <Download size={20} />, badge: 2 },
-];
-
-const secondaryNavItems: NavItem[] = [
-    { id: 'achievements', label: 'Logros', icon: <Trophy size={20} /> },
-    { id: 'mods', label: 'Mods', icon: <Puzzle size={20} /> },
-    { id: 'cloud', label: 'Nube', icon: <Cloud size={20} /> },
-];
-
 export function Sidebar() {
     const { sidebarCollapsed, toggleSidebar, currentPage, setCurrentPage } = useUIStore();
-    const { user, userData, isInitialized, initialize, logout } = useAuthStore();
+    const { user, userData, initialize, logout } = useAuthStore();
+    const { activeDownloads, loadDownloads } = useDownloadsStore();
     const [showAuthModal, setShowAuthModal] = useState(false);
 
     useEffect(() => {
         initialize();
+        loadDownloads();
     }, []);
+
+    // Dynamic nav items with real download count
+    const mainNavItems: NavItem[] = useMemo(() => [
+        { id: 'dashboard', label: 'Dashboard', icon: <LayoutDashboard size={20} /> },
+        { id: 'library', label: 'Biblioteca', icon: <Library size={20} /> },
+        { id: 'catalog', label: 'Catálogo', icon: <Search size={20} /> },
+        { id: 'downloads', label: 'Descargas', icon: <Download size={20} />, badge: activeDownloads > 0 ? activeDownloads : undefined },
+    ], [activeDownloads]);
+
+    const secondaryNavItems: NavItem[] = [
+        { id: 'achievements', label: 'Logros', icon: <Trophy size={20} /> },
+        { id: 'mods', label: 'Mods', icon: <Puzzle size={20} /> },
+        { id: 'cloud', label: 'Nube', icon: <Cloud size={20} /> },
+    ];
 
     const handleLogout = async () => {
         try {

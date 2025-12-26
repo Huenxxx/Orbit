@@ -1,0 +1,1 @@
+export { GameDetailsModal } from './GameDetailsModal';

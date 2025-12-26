@@ -1,0 +1,204 @@
+/* Platform Game Details Modal */
+.platform-details-backdrop {
+    position: fixed;
+    inset: 0;
+    background: rgba(0, 0, 0, 0.75);
+    backdrop-filter: blur(8px);
+    z-index: var(--z-modal);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.platform-details-modal {
+    position: relative;
+    width: 90%;
+    max-width: 500px;
+    max-height: 90vh;
+    background: var(--color-space);
+    border: var(--border-light);
+    border-radius: var(--radius-xl);
+    overflow: hidden;
+    z-index: calc(var(--z-modal) + 1);
+    box-shadow: 0 25px 80px rgba(0, 0, 0, 0.6), 0 0 60px rgba(139, 92, 246, 0.1);
+}
+
+.platform-details-modal .modal-close {
+    position: absolute;
+    top: var(--space-4);
+    right: var(--space-4);
+    width: 36px;
+    height: 36px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.5);
+    backdrop-filter: blur(10px);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-full);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    z-index: 10;
+}
+
+.platform-details-modal .modal-close:hover {
+    background: rgba(255, 255, 255, 0.1);
+    color: var(--text-primary);
+}
+
+/* Hero Section */
+.platform-details-modal .modal-hero {
+    position: relative;
+    height: 180px;
+    overflow: hidden;
+}
+
+.platform-details-modal .hero-background {
+    position: absolute;
+    inset: 0;
+    background-size: cover;
+    background-position: center;
+    filter: saturate(0.8);
+}
+
+.platform-details-modal .hero-overlay {
+    position: absolute;
+    inset: 0;
+}
+
+.platform-details-modal .hero-placeholder {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--gradient-dark);
+    color: var(--text-muted);
+}
+
+/* Content */
+.platform-details-modal .modal-content {
+    padding: var(--space-5);
+}
+
+.platform-details-modal .game-header {
+    margin-bottom: var(--space-5);
+}
+
+.platform-details-modal .platform-badge {
+    display: inline-block;
+    padding: var(--space-1) var(--space-3);
+    font-size: 10px;
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+    border-radius: var(--radius-sm);
+    margin-bottom: var(--space-3);
+}
+
+.platform-details-modal .game-title {
+    font-size: var(--text-xl);
+    font-weight: 700;
+    color: var(--text-primary);
+    margin-bottom: var(--space-2);
+    line-height: 1.2;
+}
+
+.platform-details-modal .playtime-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-sm);
+    color: var(--text-tertiary);
+}
+
+.platform-details-modal .playtime-info svg {
+    color: var(--color-primary-light);
+}
+
+/* Actions */
+.platform-details-modal .modal-actions {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    margin-bottom: var(--space-5);
+}
+
+.platform-details-modal .btn-play-large {
+    flex: 1;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-2);
+    padding: var(--space-3) var(--space-6);
+    color: white;
+    border: none;
+    border-radius: var(--radius-lg);
+    font-size: var(--text-base);
+    font-weight: 700;
+    letter-spacing: 0.1em;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    box-shadow: 0 4px 20px rgba(0, 0, 0, 0.3);
+}
+
+.platform-details-modal .btn-play-large:hover {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(0, 0, 0, 0.4);
+}
+
+.platform-details-modal .secondary-actions {
+    display: flex;
+    gap: var(--space-2);
+}
+
+.platform-details-modal .btn-action {
+    width: 44px;
+    height: 44px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: var(--color-stellar);
+    border: var(--border-subtle);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.platform-details-modal .btn-action:hover {
+    background: var(--color-galaxy);
+    color: var(--text-primary);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+/* Info Section */
+.platform-details-modal .game-info-section {
+    padding-top: var(--space-4);
+    border-top: var(--border-subtle);
+}
+
+.platform-details-modal .info-text {
+    font-size: var(--text-sm);
+    color: var(--text-secondary);
+    margin-bottom: var(--space-3);
+}
+
+.platform-details-modal .install-path {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+    font-family: monospace;
+    background: var(--color-nebula);
+    padding: var(--space-2) var(--space-3);
+    border-radius: var(--radius-sm);
+    word-break: break-all;
+}
+
+.platform-details-modal .install-path svg {
+    flex-shrink: 0;
+    color: var(--text-tertiary);
+}

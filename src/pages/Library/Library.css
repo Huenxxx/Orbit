@@ -263,7 +263,8 @@
 }
 
 .games-container.grid {
-    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+    gap: var(--space-3);
 }
 
 .games-container.list {
@@ -497,8 +498,8 @@
 /* Platform Games Grid */
 .platform-games-grid {
     display: grid;
-    grid-template-columns: repeat(auto-fill, minmax(220px, 1fr));
-    gap: var(--space-4);
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: var(--space-3);
 }
 
 /* Platform Game Card */
@@ -529,7 +530,7 @@
 .platform-game-card .game-image {
     position: relative;
     width: 100%;
-    height: 100px;
+    height: 80px;
     overflow: hidden;
 }
 
@@ -538,10 +539,12 @@
     height: 100%;
     object-fit: cover;
     transition: transform var(--transition-normal);
+    filter: saturate(0.8) brightness(0.92);
 }
 
 .platform-game-card:hover .game-image img {
     transform: scale(1.05);
+    filter: saturate(1) brightness(1);
 }
 
 .steam-overlay {
@@ -564,23 +567,44 @@
     color: #66c0f4;
 }
 
-.epic-placeholder {
+.epic-placeholder,
+.platform-placeholder {
     display: flex;
     align-items: center;
     justify-content: center;
-    background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
-    color: var(--text-muted);
+    background: linear-gradient(135deg, #1a1a2e, #16213e, #0f3460);
+    color: rgba(255, 255, 255, 0.3);
+    position: relative;
+    overflow: hidden;
+}
+
+.platform-placeholder::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: radial-gradient(ellipse at 30% 30%, rgba(255, 255, 255, 0.08), transparent 50%);
+    pointer-events: none;
+}
+
+.platform-placeholder svg {
+    opacity: 0.6;
+    transition: opacity var(--transition-fast), transform var(--transition-fast);
+}
+
+.platform-game-card:hover .platform-placeholder svg {
+    opacity: 1;
+    transform: scale(1.1);
 }
 
 .platform-game-card .game-info {
-    padding: var(--space-3);
+    padding: var(--space-2) var(--space-3);
 }
 
 .platform-game-card .game-info h4 {
-    font-size: var(--text-sm);
+    font-size: var(--text-xs);
     font-weight: 600;
     color: var(--text-primary);
-    margin-bottom: var(--space-1);
+    margin-bottom: 2px;
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
@@ -624,4 +648,365 @@
     to {
         transform: rotate(360deg);
     }
+}
+
+/* Additional Platform Badges */
+.platform-badge.gog {
+    background: linear-gradient(135deg, #5c2d91, #86328a);
+    color: white;
+    box-shadow: 0 2px 8px rgba(134, 50, 138, 0.2);
+}
+
+.platform-badge.ea {
+    background: linear-gradient(135deg, #ff4747, #e94040);
+    color: white;
+    box-shadow: 0 2px 8px rgba(255, 71, 71, 0.2);
+}
+
+.platform-badge.ubisoft {
+    background: linear-gradient(135deg, #0070ff, #003dad);
+    color: white;
+    box-shadow: 0 2px 8px rgba(0, 112, 255, 0.2);
+}
+
+/* Platform Section Styling */
+.gog-section .section-header:hover {
+    border-color: rgba(134, 50, 138, 0.3);
+}
+
+.ea-section .section-header:hover {
+    border-color: rgba(255, 71, 71, 0.3);
+}
+
+.ubisoft-section .section-header:hover {
+    border-color: rgba(0, 112, 255, 0.3);
+}
+
+/* Platform Game Card Hover Colors */
+.platform-game-card.gog-game:hover {
+    border-color: rgba(134, 50, 138, 0.4);
+    box-shadow: 0 8px 32px rgba(134, 50, 138, 0.15);
+}
+
+.platform-game-card.ea-game:hover {
+    border-color: rgba(255, 71, 71, 0.4);
+    box-shadow: 0 8px 32px rgba(255, 71, 71, 0.15);
+}
+
+.platform-game-card.ubisoft-game:hover {
+    border-color: rgba(0, 112, 255, 0.4);
+    box-shadow: 0 8px 32px rgba(0, 112, 255, 0.15);
+}
+
+/* Platform Overlay */
+.platform-overlay {
+    position: absolute;
+    inset: 0;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+}
+
+.platform-game-card:hover .platform-overlay {
+    opacity: 1;
+}
+
+.platform-overlay svg {
+    color: white;
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
+}
+
+/* Refresh Button */
+.btn-refresh {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 38px;
+    height: 38px;
+    padding: 0;
+    background: var(--color-stellar);
+    border: var(--border-subtle);
+    border-radius: var(--radius-md);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.btn-refresh:hover:not(:disabled) {
+    background: var(--color-galaxy);
+    color: var(--text-primary);
+    border-color: rgba(255, 255, 255, 0.2);
+}
+
+.btn-refresh:disabled {
+    opacity: 0.5;
+    cursor: not-allowed;
+}
+
+.btn-refresh .spinning {
+    animation: spin 1s linear infinite;
+}
+
+/* Platform placeholder with image support */
+.platform-placeholder {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: linear-gradient(135deg, #1a1a1a, #2d2d2d);
+    color: var(--text-muted);
+    position: relative;
+    overflow: hidden;
+}
+
+.platform-placeholder img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    position: absolute;
+    inset: 0;
+}
+
+/* Platform labels coloring */
+.platform-game-card .platform-label {
+    font-size: var(--text-xs);
+    font-weight: 500;
+}
+
+/* Platform Chips */
+.platform-chips {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    flex: 1;
+    overflow-x: auto;
+    padding: var(--space-1);
+    margin: 0 var(--space-2);
+}
+
+.platform-chips::-webkit-scrollbar {
+    display: none;
+}
+
+.platform-chip {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-1) var(--space-3);
+    background: var(--color-stellar);
+    border: var(--border-subtle);
+    border-radius: var(--radius-full);
+    color: var(--text-secondary);
+    font-size: var(--text-xs);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    white-space: nowrap;
+    flex-shrink: 0;
+}
+
+.platform-chip:hover {
+    background: var(--color-galaxy);
+    border-color: var(--platform-color, var(--color-primary));
+    color: var(--platform-color, var(--text-primary));
+}
+
+.platform-chip.active {
+    background: var(--color-galaxy);
+    border-color: var(--platform-color, var(--color-primary));
+    color: var(--platform-color, var(--text-primary));
+    box-shadow: 0 0 12px rgba(var(--platform-color), 0.3);
+}
+
+.platform-chip svg {
+    width: 16px;
+    height: 16px;
+    flex-shrink: 0;
+}
+
+.chip-count {
+    padding: 2px 6px;
+    background: rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-full);
+    font-size: 10px;
+    font-weight: 600;
+}
+
+.platform-chip.active .chip-count {
+    background: var(--platform-color, var(--color-primary));
+    color: white;
+}
+
+/* Unified Games Grid */
+.unified-games-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: var(--space-4);
+}
+
+/* Unified Game Card */
+.unified-game-card {
+    background: var(--color-nebula);
+    border: var(--border-subtle);
+    border-radius: var(--radius-lg);
+    overflow: hidden;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.unified-game-card:hover {
+    transform: translateY(-4px);
+    border-color: var(--hover-color, rgba(139, 92, 246, 0.4));
+    box-shadow: 0 8px 32px rgba(0, 0, 0, 0.3);
+}
+
+.unified-game-card .game-image {
+    position: relative;
+    width: 100%;
+    height: 100px;
+    background: linear-gradient(135deg, #1a1a2e, #16213e);
+    overflow: hidden;
+}
+
+.unified-game-card .game-image img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+    transition: transform var(--transition-normal);
+    filter: saturate(0.9) brightness(0.95);
+}
+
+.unified-game-card:hover .game-image img {
+    transform: scale(1.05);
+    filter: saturate(1) brightness(1);
+}
+
+.unified-game-card .game-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+}
+
+.unified-game-card .game-overlay {
+    position: absolute;
+    inset: 0;
+    background: linear-gradient(to top, rgba(0, 0, 0, 0.7), transparent);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    opacity: 0;
+    transition: opacity var(--transition-fast);
+}
+
+.unified-game-card:hover .game-overlay {
+    opacity: 1;
+}
+
+.unified-game-card .game-overlay svg {
+    color: white;
+    filter: drop-shadow(0 2px 8px rgba(0, 0, 0, 0.5));
+}
+
+.platform-indicator {
+    position: absolute;
+    bottom: 8px;
+    left: 8px;
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border-radius: var(--radius-sm);
+    color: white;
+    opacity: 0.9;
+}
+
+.platform-indicator svg {
+    width: 14px;
+    height: 14px;
+}
+
+.unified-game-card .game-info {
+    padding: var(--space-3);
+}
+
+.unified-game-card .game-info h4 {
+    font-size: var(--text-sm);
+    font-weight: 600;
+    color: var(--text-primary);
+    white-space: nowrap;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    margin-bottom: 4px;
+}
+
+.unified-game-card .playtime {
+    font-size: var(--text-xs);
+    font-weight: 500;
+}
+
+/* Spinning animation */
+.spinning {
+    animation: spin 1s linear infinite;
+}
+
+/* Platform specific hover colors */
+.unified-game-card.steam:hover {
+    border-color: rgba(102, 192, 244, 0.4);
+    box-shadow: 0 8px 32px rgba(102, 192, 244, 0.15);
+}
+
+.unified-game-card.epic:hover {
+    border-color: rgba(255, 255, 255, 0.3);
+}
+
+.unified-game-card.gog:hover {
+    border-color: rgba(134, 50, 138, 0.4);
+    box-shadow: 0 8px 32px rgba(134, 50, 138, 0.15);
+}
+
+.unified-game-card.ea:hover {
+    border-color: rgba(255, 71, 71, 0.4);
+    box-shadow: 0 8px 32px rgba(255, 71, 71, 0.15);
+}
+
+.unified-game-card.ubisoft:hover {
+    border-color: rgba(0, 112, 255, 0.4);
+    box-shadow: 0 8px 32px rgba(0, 112, 255, 0.15);
+}
+
+/* Not Installed State */
+.unified-game-card.not-installed .game-image img {
+    filter: saturate(0.3) brightness(0.7);
+}
+
+.unified-game-card.not-installed:hover .game-image img {
+    filter: saturate(0.5) brightness(0.8);
+}
+
+.not-installed-badge {
+    position: absolute;
+    top: 8px;
+    right: 8px;
+    padding: 4px 8px;
+    background: rgba(0, 0, 0, 0.7);
+    backdrop-filter: blur(4px);
+    border-radius: var(--radius-sm);
+    font-size: 10px;
+    font-weight: 600;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.game-overlay.install {
+    background: linear-gradient(to top, rgba(59, 130, 246, 0.8), rgba(59, 130, 246, 0.3));
+}
+
+.game-overlay.install svg {
+    color: white;
 }

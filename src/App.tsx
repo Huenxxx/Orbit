@@ -1,8 +1,8 @@
 import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { TitleBar, Sidebar, AuthScreen, NotificationToast } from './components';
-import { Dashboard, Library, Settings, Profile, Catalog, Achievements } from './pages';
-import { useUIStore, useSettingsStore } from './stores';
+import { TitleBar, Sidebar, AuthScreen, NotificationToast, EditGameModal } from './components';
+import { Dashboard, Library, Settings, Profile, Catalog, Achievements, GameDetails, Downloads } from './pages';
+import { useUIStore, useSettingsStore, useGamesStore } from './stores';
 import { useAuthStore } from './stores/authStore';
 import './App.css';
 
@@ -33,9 +33,10 @@ function LoadingScreen() {
 }
 
 function App() {
-  const { currentPage } = useUIStore();
+  const { currentPage, modalOpen, closeModal } = useUIStore();
   const { loadSettings, settings } = useSettingsStore();
   const { user, isInitialized, initialize, isAvailable } = useAuthStore();
+  const { selectedGame, setSelectedGame } = useGamesStore();
 
   useEffect(() => {
     loadSettings();
@@ -85,13 +86,15 @@ function App() {
       case 'profile':
         return wrapPage('profile', <Profile />);
       case 'downloads':
-        return wrapPage('downloads', <PlaceholderPage title="Descargas" description="Gestiona tus descargas activas y cola de instalación" />);
+        return wrapPage('downloads', <Downloads />);
       case 'achievements':
         return wrapPage('achievements', <Achievements />);
       case 'mods':
         return wrapPage('mods', <PlaceholderPage title="Mod Manager" description="Instala y gestiona mods para tus juegos favoritos" />);
       case 'cloud':
         return wrapPage('cloud', <PlaceholderPage title="Guardado en la Nube" description="Sincroniza tu progreso entre todos tus dispositivos" />);
+      case 'game-details':
+        return wrapPage('game-details', <GameDetails />);
       default:
         return wrapPage('dashboard', <Dashboard />);
     }
@@ -132,6 +135,17 @@ function App() {
           </AnimatePresence>
         </main>
       </div>
+
+      {/* Global Edit Game Modal */}
+      <AnimatePresence>
+        {modalOpen === 'edit-game' && selectedGame && (
+          <EditGameModal
+            game={selectedGame}
+            onClose={() => { closeModal(); setSelectedGame(null); }}
+          />
+        )}
+      </AnimatePresence>
+
       <NotificationToast />
     </div>
   );

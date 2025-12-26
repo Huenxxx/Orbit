@@ -4,6 +4,7 @@
   flex-direction: column;
   background: var(--color-void);
   overflow: hidden;
+  position: relative;
 }
 
 .app-container {

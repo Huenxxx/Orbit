@@ -6,6 +6,8 @@ import { emailService } from './emailService.js';
 import { steamService } from './steamService.js';
 import { steamLocalService } from './steamLocalService.js';
 import { launchersService } from './launchersService.js';
+import { torrentService } from './torrentService.js';
+import { repackSearchService } from './repackSearchService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -71,12 +73,16 @@ function createWindow() {
   mainWindow.on('closed', () => {
     mainWindow = null;
   });
+
+  // Initialize torrent service with main window
+  torrentService.setMainWindow(mainWindow);
 }
 
 app.whenReady().then(createWindow);
 
 app.on('window-all-closed', () => {
   if (process.platform !== 'darwin') {
+    torrentService.destroy();
     app.quit();
   }
 });
@@ -316,3 +322,92 @@ ipcMain.handle('launcher-launch-game', async (_, { platform, gameId }) => {
     return { success: false, error: error.message };
   }
 });
+
+// Open game installation directory
+ipcMain.handle('open-game-directory', async (_, directoryPath) => {
+  try {
+    await shell.openPath(directoryPath);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Show file in explorer
+ipcMain.handle('show-in-explorer', async (_, filePath) => {
+  try {
+    shell.showItemInFolder(filePath);
+    return { success: true };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// ==========================================
+// TORRENT SERVICE HANDLERS
+// ==========================================
+
+// Add a new torrent download
+ipcMain.handle('torrent-add', async (_, { id, magnetUri, name }) => {
+  try {
+    return await torrentService.addTorrent({ id, magnetUri, name });
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+
+// Get all downloads
+ipcMain.handle('torrent-get-all', () => {
+  return torrentService.getAllDownloads();
+});
+
+// Pause a torrent
+ipcMain.handle('torrent-pause', (_, id) => {
+  return torrentService.pauseTorrent(id);
+});
+
+// Resume a torrent
+ipcMain.handle('torrent-resume', (_, id) => {
+  return torrentService.resumeTorrent(id);
+});
+
+// Cancel a torrent
+ipcMain.handle('torrent-cancel', (_, id) => {
+  return torrentService.cancelTorrent(id);
+});
+
+// Get download path
+ipcMain.handle('torrent-get-path', () => {
+  return torrentService.getDownloadPath();
+});
+
+// Set download path
+ipcMain.handle('torrent-set-path', (_, newPath) => {
+  torrentService.setDownloadPath(newPath);
+  return { success: true };
+});
+
+// ==========================================
+// REPACK SEARCH SERVICE HANDLERS
+// ==========================================
+
+// Search repacks from all sources
+ipcMain.handle('repacks-search', async (_, query) => {
+  try {
+    return await repackSearchService.searchRepacks(query);
+  } catch (error) {
+    console.error('Error searching repacks:', error);
+    return [];
+  }
+});
+
+// Get magnet link for a specific repack
+ipcMain.handle('repacks-get-magnet', async (_, { source, postUrl }) => {
+  try {
+    const magnet = await repackSearchService.getMagnetLink(source, postUrl);
+    return { success: !!magnet, magnet };
+  } catch (error) {
+    return { success: false, error: error.message };
+  }
+});
+

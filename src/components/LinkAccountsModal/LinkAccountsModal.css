@@ -10,53 +10,57 @@
     z-index: var(--z-modal);
 }
 
-.link-accounts-modal {
+/* Compact Modal Styles */
+.link-accounts-modal.compact {
     width: 100%;
-    max-width: 600px;
-    max-height: 90vh;
+    max-width: 400px;
     background: var(--color-space);
-    border-radius: var(--radius-xl);
+    border-radius: var(--radius-lg);
     border: var(--border-subtle);
     box-shadow: 0 25px 80px -20px rgba(0, 0, 0, 0.5);
     overflow: hidden;
-    display: flex;
-    flex-direction: column;
 }
 
-.link-accounts-modal .modal-header {
+.link-accounts-modal.compact .modal-header {
     display: flex;
     align-items: center;
     justify-content: space-between;
-    padding: var(--space-5) var(--space-6);
+    padding: var(--space-4);
     background: linear-gradient(135deg, rgba(139, 92, 246, 0.1), rgba(20, 184, 166, 0.1));
     border-bottom: var(--border-subtle);
 }
 
-.link-accounts-modal .modal-title {
+.link-accounts-modal.compact .modal-title {
     display: flex;
     align-items: center;
-    gap: var(--space-3);
+    gap: var(--space-2);
 }
 
-.link-accounts-modal .modal-title svg {
+.link-accounts-modal.compact .modal-title svg {
     color: var(--color-primary);
 }
 
-.link-accounts-modal .modal-title h2 {
-    font-size: var(--text-xl);
-    font-weight: 700;
+.link-accounts-modal.compact .modal-title h2 {
+    font-size: var(--text-base);
+    font-weight: 600;
     background: linear-gradient(135deg, var(--color-primary-light), var(--color-secondary));
     -webkit-background-clip: text;
     -webkit-text-fill-color: transparent;
     background-clip: text;
 }
 
-.link-accounts-modal .modal-close {
+.header-actions-compact {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.btn-refresh-compact {
     display: flex;
     align-items: center;
     justify-content: center;
-    width: 36px;
-    height: 36px;
+    width: 32px;
+    height: 32px;
     background: var(--color-stellar);
     border: var(--border-subtle);
     border-radius: var(--radius-md);
@@ -65,559 +69,229 @@
     transition: all var(--transition-fast);
 }
 
-.link-accounts-modal .modal-close:hover {
-    background: var(--color-galaxy);
-    color: var(--text-primary);
-    border-color: rgba(255, 255, 255, 0.2);
-}
-
-.link-accounts-modal .modal-content {
-    padding: var(--space-6);
-    overflow-y: auto;
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-5);
-}
-
-.modal-description {
-    color: var(--text-secondary);
-    font-size: var(--text-sm);
-    line-height: 1.6;
-}
-
-.browser-note {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    margin-top: var(--space-2);
-    padding: var(--space-2) var(--space-3);
-    background: rgba(139, 92, 246, 0.1);
-    border-radius: var(--radius-md);
-    font-size: var(--text-xs);
-    color: var(--color-primary-light);
-}
-
-.error-message {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-3) var(--space-4);
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    border-radius: var(--radius-md);
-    color: #f87171;
-    font-size: var(--text-sm);
-}
-
-/* Platform Card */
-.platform-card {
-    background: var(--color-nebula);
-    border: var(--border-subtle);
-    border-radius: var(--radius-lg);
-    overflow: hidden;
-    transition: all var(--transition-normal);
-}
-
-.platform-card:hover {
-    border-color: rgba(255, 255, 255, 0.15);
-}
-
-.platform-card.linked {
-    border-color: rgba(139, 92, 246, 0.3);
-}
-
-.platform-card.steam.linked {
-    border-color: rgba(102, 192, 244, 0.3);
-    background: linear-gradient(135deg, rgba(102, 192, 244, 0.05), transparent);
-}
-
-.platform-card.epic.linked {
-    border-color: rgba(32, 32, 32, 0.5);
-    background: linear-gradient(135deg, rgba(255, 255, 255, 0.03), transparent);
-}
-
-.platform-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    padding: var(--space-4);
-    gap: var(--space-4);
-}
-
-.platform-info {
-    display: flex;
-    align-items: center;
-    gap: var(--space-3);
-}
-
-.platform-icon {
-    width: 48px;
-    height: 48px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--radius-lg);
-    font-size: 24px;
-}
-
-.steam-icon {
-    background: linear-gradient(135deg, #1b2838, #2a475e);
-    color: #66c0f4;
-    box-shadow: 0 4px 12px rgba(102, 192, 244, 0.2);
-}
-
-.epic-icon {
-    background: linear-gradient(135deg, #121212, #2a2a2a);
-    color: white;
-    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.1);
-}
-
-.gog-icon {
-    background: linear-gradient(135deg, #4a1e75, #6c2d91);
-    color: white;
-    box-shadow: 0 4px 12px rgba(108, 45, 145, 0.3);
-}
-
-.ea-icon {
-    background: linear-gradient(135deg, #ff4747, #cc0000);
-    color: white;
-    box-shadow: 0 4px 12px rgba(255, 71, 71, 0.3);
-}
-
-.ubisoft-icon {
-    background: linear-gradient(135deg, #0051b5, #0066cc);
-    color: white;
-    box-shadow: 0 4px 12px rgba(0, 81, 181, 0.3);
-}
-
-/* Platform Card Colors */
-.platform-card.gog.linked {
-    border-color: rgba(108, 45, 145, 0.3);
-    background: linear-gradient(135deg, rgba(108, 45, 145, 0.05), transparent);
-}
-
-.platform-card.ea.linked {
-    border-color: rgba(255, 71, 71, 0.3);
-    background: linear-gradient(135deg, rgba(255, 71, 71, 0.05), transparent);
-}
-
-.platform-card.ubisoft.linked {
-    border-color: rgba(0, 81, 181, 0.3);
-    background: linear-gradient(135deg, rgba(0, 81, 181, 0.05), transparent);
-}
-
-/* Game Placeholders for each platform */
-.gog-game-placeholder,
-.ea-game-placeholder,
-.ubisoft-game-placeholder {
-    width: 40px;
-    height: 40px;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--radius-sm);
-    color: white;
-}
-
-.gog-game-placeholder {
-    background: linear-gradient(135deg, #4a1e75, #6c2d91);
-}
-
-.ea-game-placeholder {
-    background: linear-gradient(135deg, #ff4747, #cc0000);
-}
-
-.ubisoft-game-placeholder {
-    background: linear-gradient(135deg, #0051b5, #0066cc);
-}
-
-.platform-details h3 {
-    font-size: var(--text-base);
-    font-weight: 600;
-    color: var(--text-primary);
-    margin-bottom: var(--space-1);
-}
-
-.linked-status {
-    display: flex;
-    align-items: center;
-    gap: var(--space-1);
-    font-size: var(--text-xs);
-    color: #34d399;
-}
-
-.unlinked-status {
-    font-size: var(--text-xs);
-    color: var(--text-muted);
-}
-
-.platform-actions {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-}
-
-/* Buttons */
-.btn-steam {
-    background: linear-gradient(135deg, #1b2838, #2a475e);
-    color: #66c0f4;
-    border: 1px solid rgba(102, 192, 244, 0.3);
-    padding: var(--space-2) var(--space-4);
-    border-radius: var(--radius-md);
-    font-size: var(--text-sm);
-    font-weight: 500;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    transition: all var(--transition-fast);
-}
-
-.btn-steam:hover {
-    background: linear-gradient(135deg, #2a475e, #3d6a8c);
-    border-color: #66c0f4;
-    box-shadow: 0 4px 16px rgba(102, 192, 244, 0.3);
-}
-
-.btn-epic {
-    background: linear-gradient(135deg, #121212, #2a2a2a);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    padding: var(--space-2) var(--space-4);
-    border-radius: var(--radius-md);
-    font-size: var(--text-sm);
-    font-weight: 500;
-    cursor: pointer;
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    transition: all var(--transition-fast);
-}
-
-.btn-epic:hover {
-    background: linear-gradient(135deg, #2a2a2a, #3a3a3a);
-    border-color: rgba(255, 255, 255, 0.4);
-    box-shadow: 0 4px 16px rgba(255, 255, 255, 0.1);
-}
-
-.btn-icon {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    background: var(--color-stellar);
-    border: var(--border-subtle);
-    border-radius: var(--radius-md);
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: all var(--transition-fast);
-}
-
-.btn-icon:hover {
+.btn-refresh-compact:hover {
     background: var(--color-galaxy);
     color: var(--text-primary);
 }
 
-.btn-icon:disabled {
+.btn-refresh-compact:disabled {
     opacity: 0.5;
     cursor: not-allowed;
 }
 
-.btn-danger-ghost {
+.link-accounts-modal.compact .modal-close {
     display: flex;
     align-items: center;
-    gap: var(--space-2);
-    padding: var(--space-2) var(--space-3);
-    background: transparent;
-    border: 1px solid rgba(239, 68, 68, 0.3);
+    justify-content: center;
+    width: 32px;
+    height: 32px;
+    background: var(--color-stellar);
+    border: var(--border-subtle);
     border-radius: var(--radius-md);
-    color: #f87171;
-    font-size: var(--text-sm);
-    font-weight: 500;
+    color: var(--text-secondary);
     cursor: pointer;
     transition: all var(--transition-fast);
 }
 
-.btn-danger-ghost:hover {
-    background: rgba(239, 68, 68, 0.1);
-    border-color: #ef4444;
+.link-accounts-modal.compact .modal-close:hover {
+    background: var(--color-galaxy);
+    color: var(--text-primary);
 }
 
-/* Steam Input Section */
-.steam-input-section {
-    padding: 0 var(--space-4) var(--space-4);
+.link-accounts-modal.compact .modal-content {
+    padding: var(--space-4);
 }
 
-.input-group {
+/* Platforms Grid */
+.platforms-grid {
     display: flex;
     flex-direction: column;
     gap: var(--space-2);
 }
 
-.input-group label {
-    font-size: var(--text-sm);
-    font-weight: 500;
-    color: var(--text-secondary);
-}
-
-.input-with-button {
-    display: flex;
-    gap: var(--space-2);
-}
-
-.steam-id-input {
-    flex: 1;
-    padding: var(--space-3);
-    background: var(--color-stellar);
-    border: var(--border-subtle);
-    border-radius: var(--radius-md);
-    color: var(--text-primary);
-    font-size: var(--text-sm);
-    font-family: 'JetBrains Mono', monospace;
-    transition: all var(--transition-fast);
-}
-
-.steam-id-input:focus {
-    outline: none;
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px var(--color-primary-glow);
-}
-
-.steam-id-input::placeholder {
-    color: var(--text-muted);
-}
-
-/* Steam ID Input Container */
-.steam-id-input-container {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-2);
-    width: 100%;
-    max-width: 320px;
-}
-
-.steam-id-input-container .steam-id-input {
-    width: 100%;
-    padding: var(--space-2) var(--space-3);
-    font-size: var(--text-xs);
-}
-
-.steam-id-actions {
-    display: flex;
-    gap: var(--space-2);
-}
-
-.btn-small {
-    padding: var(--space-1) var(--space-3) !important;
-    font-size: var(--text-xs) !important;
-}
-
-.btn-ghost {
-    background: transparent;
-    border: 1px solid var(--border-color);
-    color: var(--text-secondary);
-}
-
-.btn-ghost:hover {
-    background: var(--color-stellar);
-    color: var(--text-primary);
-}
-
-.steam-id-help {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-1);
-    font-size: 10px;
-    color: var(--text-muted);
-    text-decoration: none;
-    transition: color var(--transition-fast);
-}
-
-.steam-id-help:hover {
-    color: var(--color-primary-light);
-}
-
-.help-link {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-1);
-    font-size: var(--text-xs);
-    color: var(--color-primary-light);
-    text-decoration: none;
-    transition: color var(--transition-fast);
-}
-
-.help-link:hover {
-    color: var(--color-secondary);
-}
-
-/* Games Preview */
-.games-preview {
-    padding: 0 var(--space-4) var(--space-4);
-    border-top: var(--border-subtle);
-    margin-top: var(--space-2);
-    padding-top: var(--space-4);
-}
-
-.games-preview-header {
-    display: flex;
-    align-items: center;
-    justify-content: space-between;
-    margin-bottom: var(--space-3);
-}
-
-.games-count {
-    display: flex;
-    align-items: center;
-    gap: var(--space-1);
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-    font-weight: 500;
-}
-
-.last-sync {
-    font-size: var(--text-xs);
-    color: var(--text-muted);
-}
-
-.games-list {
-    display: grid;
-    grid-template-columns: repeat(2, 1fr);
-    gap: var(--space-2);
-}
-
-.game-preview-item {
+/* Platform Row */
+.platform-row {
     display: flex;
     align-items: center;
     gap: var(--space-3);
-    padding: var(--space-2);
-    background: var(--color-stellar);
+    padding: var(--space-3);
+    background: var(--color-nebula);
+    border: var(--border-subtle);
     border-radius: var(--radius-md);
     transition: all var(--transition-fast);
 }
 
-.game-preview-item:hover {
-    background: var(--color-galaxy);
+.platform-row:hover {
+    background: var(--color-stellar);
 }
 
-.game-preview-item img {
-    width: 60px;
-    height: 28px;
-    object-fit: cover;
-    border-radius: var(--radius-sm);
+.platform-row.linked {
+    border-left: 3px solid transparent;
 }
 
-.epic-game-placeholder {
-    width: 40px;
-    height: 40px;
+.platform-row.steam.linked {
+    border-left-color: #66c0f4;
+}
+
+.platform-row.epic.linked {
+    border-left-color: #fff;
+}
+
+.platform-row.gog.linked {
+    border-left-color: #86328a;
+}
+
+.platform-row.ea.linked {
+    border-left-color: #ff4747;
+}
+
+.platform-row.ubisoft.linked {
+    border-left-color: #0070ff;
+}
+
+/* Platform Icon Compact */
+.platform-icon-compact {
+    width: 36px;
+    height: 36px;
     display: flex;
     align-items: center;
     justify-content: center;
-    background: var(--color-galaxy);
-    border-radius: var(--radius-sm);
-    color: var(--text-muted);
+    border-radius: var(--radius-md);
+    flex-shrink: 0;
 }
 
-.game-preview-info {
+.platform-icon-compact.steam-icon {
+    background: linear-gradient(135deg, #1b2838, #2a475e);
+    color: #66c0f4;
+}
+
+.platform-icon-compact.epic-icon {
+    background: linear-gradient(135deg, #121212, #2a2a2a);
+    color: white;
+}
+
+.platform-icon-compact.gog-icon {
+    background: linear-gradient(135deg, #4a1e75, #6c2d91);
+    color: white;
+}
+
+.platform-icon-compact.ea-icon {
+    background: linear-gradient(135deg, #ff4747, #cc0000);
+    color: white;
+}
+
+.platform-icon-compact.ubisoft-icon {
+    background: linear-gradient(135deg, #0051b5, #0066cc);
+    color: white;
+}
+
+/* Platform Info Compact */
+.platform-info-compact {
     flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
     min-width: 0;
 }
 
-.game-name {
-    display: block;
-    font-size: var(--text-xs);
+.platform-name {
+    font-size: var(--text-sm);
     font-weight: 500;
     color: var(--text-primary);
-    white-space: nowrap;
-    overflow: hidden;
-    text-overflow: ellipsis;
 }
 
-.game-playtime {
-    font-size: 10px;
-    color: var(--text-muted);
-}
-
-.more-games {
+.platform-status {
     display: flex;
     align-items: center;
-    justify-content: center;
-    padding: var(--space-3);
-    background: var(--color-stellar);
-    border-radius: var(--radius-md);
+    gap: var(--space-1);
     font-size: var(--text-xs);
     color: var(--text-muted);
-    font-weight: 500;
 }
 
-/* Game Action Buttons */
-.game-preview-item.installed {
-    border-left: 2px solid #34d399;
-}
-
-.installed-count {
-    font-size: 10px;
+.platform-status.linked {
     color: #34d399;
-    margin-left: var(--space-1);
 }
 
-.btn-game-action {
+/* Platform Action */
+.platform-action {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+}
+
+.btn-icon-sm {
     display: flex;
     align-items: center;
     justify-content: center;
     width: 28px;
     height: 28px;
+    background: var(--color-stellar);
+    border: var(--border-subtle);
+    border-radius: var(--radius-sm);
+    color: var(--text-secondary);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.btn-icon-sm:hover {
+    background: var(--color-galaxy);
+    color: var(--text-primary);
+}
+
+.btn-icon-sm.danger:hover {
+    background: rgba(239, 68, 68, 0.1);
+    color: #f87171;
+    border-color: rgba(239, 68, 68, 0.3);
+}
+
+.btn-link-sm {
+    padding: var(--space-1) var(--space-3);
     border-radius: var(--radius-sm);
     border: none;
-    cursor: pointer;
-    font-size: 12px;
-    transition: all var(--transition-fast);
-    flex-shrink: 0;
-}
-
-.btn-play {
-    background: linear-gradient(135deg, #34d399, #22c55e);
-    color: white;
-}
-
-.btn-play:hover {
-    background: linear-gradient(135deg, #22c55e, #16a34a);
-    box-shadow: 0 4px 12px rgba(34, 197, 94, 0.4);
-    transform: scale(1.1);
-}
-
-.btn-install {
-    background: linear-gradient(135deg, #3b82f6, #2563eb);
-    color: white;
-}
-
-.btn-install:hover {
-    background: linear-gradient(135deg, #2563eb, #1d4ed8);
-    box-shadow: 0 4px 12px rgba(59, 130, 246, 0.4);
-    transform: scale(1.1);
-}
-
-/* Info Note */
-.info-note {
-    display: flex;
-    gap: var(--space-3);
-    padding: var(--space-4);
-    background: rgba(59, 130, 246, 0.1);
-    border: 1px solid rgba(59, 130, 246, 0.2);
-    border-radius: var(--radius-md);
-}
-
-.info-note svg {
-    flex-shrink: 0;
-    color: #60a5fa;
-    margin-top: 2px;
-}
-
-.info-note p {
     font-size: var(--text-xs);
-    color: var(--text-secondary);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+    display: flex;
+    align-items: center;
+    gap: var(--space-1);
+}
+
+.btn-link-sm.steam {
+    background: linear-gradient(135deg, #1b2838, #2a475e);
+    color: #66c0f4;
+}
+
+.btn-link-sm.steam:hover {
+    background: linear-gradient(135deg, #2a475e, #3d6a8c);
+}
+
+.btn-link-sm:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.auto-detected {
+    padding: var(--space-1) var(--space-2);
+    background: rgba(52, 211, 153, 0.1);
+    border-radius: var(--radius-sm);
+    font-size: 10px;
+    font-weight: 500;
+    color: #34d399;
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+/* Compact Note */
+.compact-note {
+    margin-top: var(--space-3);
+    padding: var(--space-3);
+    background: rgba(59, 130, 246, 0.08);
+    border-radius: var(--radius-sm);
+    font-size: var(--text-xs);
+    color: var(--text-muted);
     line-height: 1.5;
+    text-align: center;
 }
 
 /* Spinning animation */
@@ -633,302 +307,4 @@
     to {
         transform: rotate(360deg);
     }
-}
-
-/* OAuth Mode */
-.link-accounts-modal.oauth-mode {
-    max-width: 450px;
-}
-
-/* OAuth Screen */
-.oauth-screen {
-    display: flex;
-    flex-direction: column;
-}
-
-.oauth-header {
-    display: flex;
-    align-items: center;
-    gap: var(--space-4);
-    padding: var(--space-4) var(--space-5);
-    border-bottom: var(--border-subtle);
-}
-
-.btn-back {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    width: 36px;
-    height: 36px;
-    background: var(--color-stellar);
-    border: var(--border-subtle);
-    border-radius: var(--radius-md);
-    color: var(--text-secondary);
-    cursor: pointer;
-    transition: all var(--transition-fast);
-}
-
-.btn-back:hover {
-    background: var(--color-galaxy);
-    color: var(--text-primary);
-}
-
-.oauth-brand {
-    display: flex;
-    align-items: center;
-    gap: var(--space-2);
-    font-size: var(--text-lg);
-    font-weight: 700;
-}
-
-.steam-brand {
-    color: #66c0f4;
-}
-
-.epic-brand {
-    color: white;
-}
-
-.oauth-content {
-    padding: var(--space-8) var(--space-6);
-    text-align: center;
-}
-
-.oauth-logo {
-    width: 80px;
-    height: 80px;
-    margin: 0 auto var(--space-6);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    border-radius: var(--radius-xl);
-}
-
-.steam-logo {
-    background: linear-gradient(135deg, #1b2838, #2a475e);
-    color: #66c0f4;
-    box-shadow: 0 8px 32px rgba(102, 192, 244, 0.3);
-}
-
-.steam-logo svg {
-    width: 48px;
-    height: 48px;
-}
-
-.epic-logo {
-    background: linear-gradient(135deg, #121212, #2a2a2a);
-    color: white;
-    box-shadow: 0 8px 32px rgba(255, 255, 255, 0.1);
-}
-
-.epic-logo svg {
-    width: 48px;
-    height: 48px;
-}
-
-.oauth-content h2 {
-    font-size: var(--text-xl);
-    font-weight: 700;
-    color: var(--text-primary);
-    margin-bottom: var(--space-2);
-}
-
-.oauth-content>p {
-    font-size: var(--text-sm);
-    color: var(--text-secondary);
-    margin-bottom: var(--space-6);
-}
-
-.oauth-error {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-2);
-    padding: var(--space-3) var(--space-4);
-    background: rgba(239, 68, 68, 0.1);
-    border: 1px solid rgba(239, 68, 68, 0.3);
-    border-radius: var(--radius-md);
-    color: #f87171;
-    font-size: var(--text-sm);
-    margin-bottom: var(--space-4);
-}
-
-.oauth-form {
-    display: flex;
-    flex-direction: column;
-    gap: var(--space-4);
-    margin-bottom: var(--space-6);
-}
-
-.oauth-input-group {
-    text-align: left;
-}
-
-.oauth-input-group label {
-    display: block;
-    font-size: var(--text-sm);
-    font-weight: 500;
-    color: var(--text-secondary);
-    margin-bottom: var(--space-2);
-}
-
-.oauth-input-group input {
-    width: 100%;
-    padding: var(--space-3) var(--space-4);
-    background: var(--color-stellar);
-    border: var(--border-subtle);
-    border-radius: var(--radius-md);
-    color: var(--text-primary);
-    font-size: var(--text-base);
-    transition: all var(--transition-fast);
-}
-
-.oauth-input-group input:focus {
-    outline: none;
-    border-color: var(--color-primary);
-    box-shadow: 0 0 0 3px var(--color-primary-glow);
-}
-
-.oauth-input-group input::placeholder {
-    color: var(--text-muted);
-}
-
-.oauth-input-group input:disabled {
-    opacity: 0.6;
-    cursor: not-allowed;
-}
-
-/* Steam Auth Button */
-.btn-steam-auth {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-2);
-    padding: var(--space-4);
-    background: linear-gradient(135deg, #1b2838, #2a475e);
-    color: #66c0f4;
-    border: 1px solid rgba(102, 192, 244, 0.3);
-    border-radius: var(--radius-lg);
-    font-size: var(--text-base);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--transition-fast);
-}
-
-.btn-steam-auth:hover:not(:disabled) {
-    background: linear-gradient(135deg, #2a475e, #3d6a8c);
-    border-color: #66c0f4;
-    box-shadow: 0 8px 32px rgba(102, 192, 244, 0.3);
-    transform: translateY(-2px);
-}
-
-.btn-steam-auth:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-}
-
-/* Epic Auth Button */
-.btn-epic-auth {
-    width: 100%;
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-2);
-    padding: var(--space-4);
-    background: linear-gradient(135deg, #121212, #2a2a2a);
-    color: white;
-    border: 1px solid rgba(255, 255, 255, 0.2);
-    border-radius: var(--radius-lg);
-    font-size: var(--text-base);
-    font-weight: 600;
-    cursor: pointer;
-    transition: all var(--transition-fast);
-}
-
-.btn-epic-auth:hover:not(:disabled) {
-    background: linear-gradient(135deg, #2a2a2a, #3a3a3a);
-    border-color: rgba(255, 255, 255, 0.4);
-    box-shadow: 0 8px 32px rgba(255, 255, 255, 0.1);
-    transform: translateY(-2px);
-}
-
-.btn-epic-auth:disabled {
-    opacity: 0.7;
-    cursor: not-allowed;
-}
-
-.oauth-info {
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    gap: var(--space-2);
-    font-size: var(--text-xs);
-    color: var(--text-muted);
-    margin-bottom: var(--space-4);
-}
-
-.oauth-info svg {
-    color: var(--color-primary);
-}
-
-.oauth-footer {
-    padding-top: var(--space-4);
-    border-top: var(--border-subtle);
-}
-
-.oauth-footer p {
-    font-size: var(--text-xs);
-    color: var(--text-muted);
-    margin-bottom: var(--space-3);
-}
-
-.oauth-footer a {
-    display: inline-flex;
-    align-items: center;
-    gap: var(--space-1);
-    font-size: var(--text-xs);
-    color: var(--color-primary-light);
-    text-decoration: none;
-    transition: color var(--transition-fast);
-}
-
-.oauth-footer a:hover {
-    color: var(--color-secondary);
-}
-
-/* Steam OAuth Specific */
-.steam-oauth {
-    background: linear-gradient(180deg, #1b2838 0%, var(--color-space) 100%);
-}
-
-.steam-oauth .oauth-header {
-    background: rgba(27, 40, 56, 0.5);
-    border-color: rgba(102, 192, 244, 0.1);
-}
-
-.steam-oauth .oauth-input-group input:focus {
-    border-color: #66c0f4;
-    box-shadow: 0 0 0 3px rgba(102, 192, 244, 0.2);
-}
-
-/* Epic OAuth Specific */
-.epic-oauth {
-    background: linear-gradient(180deg, #121212 0%, var(--color-space) 100%);
-}
-
-.epic-oauth .oauth-header {
-    background: rgba(18, 18, 18, 0.5);
-    border-color: rgba(255, 255, 255, 0.05);
-}
-
-.epic-oauth .oauth-input-group input:focus {
-    border-color: rgba(255, 255, 255, 0.5);
-    box-shadow: 0 0 0 3px rgba(255, 255, 255, 0.1);
-}
-
-/* Main Screen */
-.main-screen {
-    display: flex;
-    flex-direction: column;
 }
