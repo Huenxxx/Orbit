@@ -292,3 +292,167 @@
     border-color: rgba(255, 255, 255, 0.1);
     color: var(--text-primary);
 }
+
+/* Linked Accounts Section */
+.linked-accounts-section {
+    margin-top: var(--space-6);
+}
+
+.linked-account-card {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    padding: var(--space-4) var(--space-5);
+    transition: background var(--transition-fast);
+}
+
+.linked-account-card:hover {
+    background: rgba(255, 255, 255, 0.02);
+}
+
+.account-platform {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    color: var(--text-secondary);
+    font-weight: 500;
+    min-width: 100px;
+}
+
+.account-platform svg {
+    color: #66c0f4; /* Steam blue color */
+}
+
+.account-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    flex: 1;
+    margin-left: var(--space-6);
+}
+
+.account-avatar {
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--color-stellar);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    border: 2px solid var(--color-primary-glow);
+}
+
+.account-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.account-details {
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+}
+
+.account-username {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: var(--text-sm);
+}
+
+.account-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.steam-level {
+    background: linear-gradient(135deg, #1a9fff, #66c0f4);
+    color: white;
+    padding: 2px 8px;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+}
+
+.steam-games {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.account-not-linked {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    flex: 1;
+    justify-content: flex-end;
+}
+
+.account-not-linked > span {
+    color: var(--text-muted);
+    font-size: var(--text-sm);
+}
+
+/* Steam Login Button */
+.btn-steam {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    background: linear-gradient(135deg, #1b2838, #2a475e);
+    border: 1px solid #66c0f4;
+    border-radius: var(--radius-md);
+    color: #66c0f4;
+    font-size: var(--text-sm);
+    font-weight: 500;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.btn-steam:hover:not(:disabled) {
+    background: linear-gradient(135deg, #2a475e, #3d6580);
+    color: white;
+    box-shadow: 0 0 15px rgba(102, 192, 244, 0.3);
+}
+
+.btn-steam:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-steam svg {
+    width: 16px;
+    height: 16px;
+}
+
+.unlink-btn {
+    margin-left: auto;
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+}
+
+.unlink-btn:hover {
+    color: var(--color-status-error);
+}
+
+.account-error {
+    padding: var(--space-3) var(--space-5);
+    background: rgba(239, 68, 68, 0.1);
+    border-top: 1px solid rgba(239, 68, 68, 0.2);
+    color: var(--color-status-error);
+    font-size: var(--text-sm);
+}
+
+/* Spinner animation */
+.spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from { transform: rotate(0deg); }
+    to { transform: rotate(360deg); }
+}

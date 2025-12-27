@@ -209,6 +209,32 @@ ipcMain.handle('steam-get-achievements', async (_, { steamId, appId }) => {
   return await steamService.getPlayerAchievements(steamId, appId);
 });
 
+ipcMain.handle('steam-get-player-count', async (_, appId) => {
+  return await steamService.getCurrentPlayerCount(appId);
+});
+
+// Steam OpenID Authentication
+ipcMain.handle('steam-openid-login', async () => {
+  const { steamAuthService } = await import('./steamAuthService.js');
+  return await steamAuthService.startSteamAuth();
+});
+
+// Steam Level
+ipcMain.handle('steam-get-level', async (_, steamId) => {
+  return await steamService.getSteamLevel(steamId);
+});
+
+// Steam Badges
+ipcMain.handle('steam-get-badges', async (_, steamId) => {
+  return await steamService.getSteamBadges(steamId);
+});
+
+// Steam Friends
+ipcMain.handle('steam-get-friends', async (_, steamId) => {
+  return await steamService.getFriendsWithStatus(steamId);
+});
+
+
 // Steam Local Service Handlers
 ipcMain.handle('steam-get-local-info', async () => {
   return await steamLocalService.getSteamInfo();

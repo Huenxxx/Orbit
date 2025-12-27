@@ -45,6 +45,21 @@ export interface LinkedAccount {
     avatarUrl?: string;
     linkedAt: string;
     lastSync?: string;
+    steamLevel?: number;
+}
+
+// Steam friend with status
+export interface SteamFriend {
+    steamId: string;
+    personaName: string;
+    avatarFull: string;
+    personaState: number;
+    personaStateString: 'offline' | 'online' | 'busy' | 'away' | 'snooze' | 'looking_to_trade' | 'looking_to_play';
+    currentGame: {
+        gameId: string;
+        gameName: string;
+    } | null;
+    friendSince: number;
 }
 
 interface LinkedAccountsState {
@@ -55,15 +70,19 @@ interface LinkedAccountsState {
     installedSteamGames: InstalledSteamGame[];
     steamInstalled: boolean;
     steamPath: string | null;
+    steamLevel: number | null;
+    steamFriends: SteamFriend[];
     isLinkingSteam: boolean;
     isLinkingEpic: boolean;
     isSyncingSteam: boolean;
     isSyncingEpic: boolean;
+    isLoadingFriends: boolean;
     error: string | null;
 
     // Actions
     linkSteamAccount: (steamId: string) => Promise<boolean>;
     linkSteamAccountAuto: () => Promise<boolean>;
+    linkSteamWithOpenID: () => Promise<boolean>;
     linkEpicAccount: () => Promise<boolean>;
     unlinkSteamAccount: () => void;
     unlinkEpicAccount: () => void;
@@ -73,7 +92,10 @@ interface LinkedAccountsState {
     detectLocalSteam: () => Promise<void>;
     launchSteamGame: (appId: number) => Promise<boolean>;
     installSteamGame: (appId: number) => Promise<boolean>;
+    getSteamLevel: () => Promise<void>;
+    getSteamFriends: () => Promise<void>;
 }
+
 
 // Installed Steam Game from local detection
 export interface InstalledSteamGame {
@@ -120,10 +142,13 @@ export const useLinkedAccountsStore = create<LinkedAccountsState>((set, get) => 
     installedSteamGames: [],
     steamInstalled: false,
     steamPath: null,
+    steamLevel: null,
+    steamFriends: [],
     isLinkingSteam: false,
     isLinkingEpic: false,
     isSyncingSteam: false,
     isSyncingEpic: false,
+    isLoadingFriends: false,
     error: null,
 
     loadLinkedAccounts: () => {
@@ -483,6 +508,122 @@ export const useLinkedAccountsStore = create<LinkedAccountsState>((set, get) => 
         } catch (error) {
             console.error('Error installing game:', error);
             return false;
+        }
+    },
+
+    // Link Steam account using OpenID authentication
+    linkSteamWithOpenID: async () => {
+        set({ isLinkingSteam: true, error: null });
+
+        try {
+            const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
+
+            if (!ipcRenderer) {
+                throw new Error('Solo disponible en la aplicación de escritorio');
+            }
+
+            // Start OpenID authentication flow
+            const authResult = await ipcRenderer.invoke('steam-openid-login');
+
+            if (!authResult.success || !authResult.steamId) {
+                throw new Error(authResult.error || 'Error en la autenticación de Steam');
+            }
+
+            const steamId = authResult.steamId;
+
+            // Get profile info from Steam API
+            let username = `Steam User ${steamId.slice(-4)}`;
+            let avatarUrl = 'https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg';
+
+            const profileResult = await ipcRenderer.invoke('steam-get-player-summary', steamId);
+
+            if (profileResult.success && profileResult.profile) {
+                username = profileResult.profile.personaName;
+                avatarUrl = profileResult.profile.avatarFull || profileResult.profile.avatarMedium || avatarUrl;
+            }
+
+            // Get Steam level
+            const levelResult = await ipcRenderer.invoke('steam-get-level', steamId);
+            const steamLevel = levelResult.success ? levelResult.level : 0;
+
+            const account: LinkedAccount = {
+                platform: 'steam',
+                userId: steamId,
+                username: username,
+                avatarUrl: avatarUrl,
+                linkedAt: new Date().toISOString(),
+                steamLevel: steamLevel
+            };
+
+            localStorage.setItem(STORAGE_KEY_STEAM, JSON.stringify(account));
+            set({
+                steamAccount: account,
+                steamLevel: steamLevel,
+                isLinkingSteam: false
+            });
+
+            // Sync games after linking
+            await get().syncSteamGames();
+
+            // Load friends
+            await get().getSteamFriends();
+
+            return true;
+        } catch (error) {
+            console.error('Error linking Steam with OpenID:', error);
+            set({ error: (error as Error).message, isLinkingSteam: false });
+            return false;
+        }
+    },
+
+    // Get Steam level
+    getSteamLevel: async () => {
+        const { steamAccount } = get();
+        if (!steamAccount) return;
+
+        try {
+            const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
+
+            if (!ipcRenderer) return;
+
+            const result = await ipcRenderer.invoke('steam-get-level', steamAccount.userId);
+
+            if (result.success) {
+                set({ steamLevel: result.level });
+            }
+        } catch (error) {
+            console.error('Error getting Steam level:', error);
+        }
+    },
+
+    // Get Steam friends with status
+    getSteamFriends: async () => {
+        const { steamAccount } = get();
+        if (!steamAccount) return;
+
+        set({ isLoadingFriends: true });
+
+        try {
+            const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
+
+            if (!ipcRenderer) {
+                set({ isLoadingFriends: false });
+                return;
+            }
+
+            const result = await ipcRenderer.invoke('steam-get-friends', steamAccount.userId);
+
+            if (result.success && result.friends) {
+                set({
+                    steamFriends: result.friends as SteamFriend[],
+                    isLoadingFriends: false
+                });
+            } else {
+                set({ isLoadingFriends: false });
+            }
+        } catch (error) {
+            console.error('Error getting Steam friends:', error);
+            set({ isLoadingFriends: false });
         }
     }
 }));

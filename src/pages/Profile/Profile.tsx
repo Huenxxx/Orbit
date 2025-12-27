@@ -18,14 +18,28 @@ import {
 } from 'lucide-react';
 import { useProfileStore, useGamesStore } from '../../stores';
 import { useAuthStore } from '../../stores/authStore';
+import { useLinkedAccountsStore } from '../../stores/linkedAccountsStore';
 import './Profile.css';
+
+// Steam icon SVG component
+const SteamIcon = ({ size = 16 }: { size?: number }) => (
+    <svg width={size} height={size} viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 0C5.373 0 0 5.373 0 12c0 5.628 3.875 10.35 9.101 11.647l2.063-2.063a8.002 8.002 0 0 1-4.164-4.164l-2.063 2.063A11.944 11.944 0 0 1 0 12C0 5.373 5.373 0 12 0zm0 2.182c-5.422 0-9.818 4.396-9.818 9.818 0 2.164.7 4.164 1.885 5.79l3.344-3.344a3.27 3.27 0 0 1 2.952-4.355c.182-.009.364.006.545.042l1.974-2.84a5.09 5.09 0 0 1 5.09 5.09v.364l2.814-1.974a3.273 3.273 0 0 1 4.396 2.952c.009.182-.006.364-.042.545l3.344 3.344a9.772 9.772 0 0 0 1.885-5.79c0-5.422-4.396-9.818-9.818-9.818z" />
+        <circle cx="8.5" cy="14.5" r="2.5" />
+        <circle cx="16" cy="9" r="2" />
+    </svg>
+);
 
 export function Profile() {
     const { profile, loadProfile, updateProfile } = useProfileStore();
     const { games, loadGames } = useGamesStore();
     const { user, userData } = useAuthStore();
+    const { steamAccount } = useLinkedAccountsStore();
     const [isEditing, setIsEditing] = useState(false);
     const [isSaving, setIsSaving] = useState(false);
+    const [useSteamAvatar, setUseSteamAvatar] = useState(() => {
+        return localStorage.getItem('orbit-avatar-source') === 'steam';
+    });
     const [editData, setEditData] = useState({
         username: '',
         bio: ''
@@ -36,9 +50,21 @@ export function Profile() {
         loadGames();
     }, []);
 
+    // Toggle avatar source
+    const toggleAvatarSource = () => {
+        const newValue = !useSteamAvatar;
+        setUseSteamAvatar(newValue);
+        localStorage.setItem('orbit-avatar-source', newValue ? 'steam' : 'orbit');
+    };
+
     // Use Firebase user data if available, otherwise use local profile
     const displayName = user?.displayName || userData?.username || profile?.username || 'Jugador';
-    const displayAvatar = user?.photoURL || userData?.avatar || profile?.avatar || null;
+
+    // Avatar logic: check for Steam preference
+    const orbitAvatar = user?.photoURL || userData?.avatar || profile?.avatar || null;
+    const steamAvatar = steamAccount?.avatarUrl || null;
+    const displayAvatar = (useSteamAvatar && steamAvatar) ? steamAvatar : orbitAvatar;
+
     const displayEmail = user?.email || '';
 
     useEffect(() => {
@@ -118,7 +144,7 @@ export function Profile() {
 
                 <div className="profile-info">
                     <div className="avatar-container">
-                        <div className="avatar">
+                        <div className={`avatar ${useSteamAvatar ? 'steam-avatar' : ''}`}>
                             {displayAvatar ? (
                                 <img src={displayAvatar} alt="Avatar" />
                             ) : (
@@ -128,6 +154,15 @@ export function Profile() {
                         <button className="avatar-edit" title="Cambiar avatar">
                             <Camera size={14} />
                         </button>
+                        {steamAccount && (
+                            <button
+                                className={`avatar-steam-toggle ${useSteamAvatar ? 'active' : ''}`}
+                                onClick={toggleAvatarSource}
+                                title={useSteamAvatar ? 'Usando avatar de Steam' : 'Usar avatar de Steam'}
+                            >
+                                <SteamIcon size={12} />
+                            </button>
+                        )}
                         <div className={`status-indicator ${profile?.status || 'online'}`}></div>
                     </div>
 

@@ -237,10 +237,280 @@ async function getPlayerAchievements(steamId, appId) {
     }
 }
 
+/**
+ * Gets the Steam level for a user
+ * @param {string} steamId - The 64-bit Steam ID
+ * @returns {Promise<{success: boolean, level?: number, error?: string}>}
+ */
+async function getSteamLevel(steamId) {
+    try {
+        const url = `${STEAM_API_BASE}/IPlayerService/GetSteamLevel/v1/?key=${STEAM_API_KEY}&steamid=${steamId}&format=json`;
+
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            throw new Error(`Steam API responded with status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        return {
+            success: true,
+            level: data.response?.player_level || 0
+        };
+
+    } catch (error) {
+        console.error('Error fetching Steam level:', error);
+        return { success: false, error: error.message, level: 0 };
+    }
+}
+
+/**
+ * Gets the Steam badges for a user
+ * @param {string} steamId - The 64-bit Steam ID
+ * @returns {Promise<{success: boolean, badges?: Array, playerXp?: number, playerLevel?: number, error?: string}>}
+ */
+async function getSteamBadges(steamId) {
+    try {
+        const url = `${STEAM_API_BASE}/IPlayerService/GetBadges/v1/?key=${STEAM_API_KEY}&steamid=${steamId}&format=json`;
+
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            throw new Error(`Steam API responded with status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (!data.response) {
+            return { success: true, badges: [], playerXp: 0, playerLevel: 0 };
+        }
+
+        return {
+            success: true,
+            badges: data.response.badges || [],
+            playerXp: data.response.player_xp || 0,
+            playerLevel: data.response.player_level || 0,
+            playerXpNeededToLevelUp: data.response.player_xp_needed_to_level_up || 0,
+            playerXpNeededCurrentLevel: data.response.player_xp_needed_current_level || 0
+        };
+
+    } catch (error) {
+        console.error('Error fetching Steam badges:', error);
+        return { success: false, error: error.message, badges: [] };
+    }
+}
+
+/**
+ * Gets the friend list for a user
+ * @param {string} steamId - The 64-bit Steam ID
+ * @returns {Promise<{success: boolean, friends?: Array, error?: string}>}
+ */
+async function getFriendList(steamId) {
+    try {
+        const url = `${STEAM_API_BASE}/ISteamUser/GetFriendList/v1/?key=${STEAM_API_KEY}&steamid=${steamId}&relationship=friend&format=json`;
+
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            if (response.status === 401) {
+                return { success: false, error: 'Lista de amigos privada', friends: [] };
+            }
+            throw new Error(`Steam API responded with status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (!data.friendslist || !data.friendslist.friends) {
+            return { success: true, friends: [] };
+        }
+
+        return {
+            success: true,
+            friends: data.friendslist.friends.map(friend => ({
+                steamId: friend.steamid,
+                relationship: friend.relationship,
+                friendSince: friend.friend_since
+            }))
+        };
+
+    } catch (error) {
+        console.error('Error fetching friend list:', error);
+        return { success: false, error: error.message, friends: [] };
+    }
+}
+
+/**
+ * Gets detailed summaries for multiple Steam users (up to 100)
+ * Useful for getting online status and current game for friends
+ * @param {string[]} steamIds - Array of 64-bit Steam IDs
+ * @returns {Promise<{success: boolean, players?: Array, error?: string}>}
+ */
+async function getPlayersSummaries(steamIds) {
+    try {
+        if (!steamIds || steamIds.length === 0) {
+            return { success: true, players: [] };
+        }
+
+        // Steam API allows up to 100 IDs per request
+        const ids = steamIds.slice(0, 100).join(',');
+        const url = `${STEAM_API_BASE}/ISteamUser/GetPlayerSummaries/v2/?key=${STEAM_API_KEY}&steamids=${ids}&format=json`;
+
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            throw new Error(`Steam API responded with status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        if (!data.response || !data.response.players) {
+            return { success: true, players: [] };
+        }
+
+        // Map persona states to readable strings
+        const stateMap = {
+            0: 'offline',
+            1: 'online',
+            2: 'busy',
+            3: 'away',
+            4: 'snooze',
+            5: 'looking_to_trade',
+            6: 'looking_to_play'
+        };
+
+        const players = data.response.players.map(player => ({
+            steamId: player.steamid,
+            personaName: player.personaname,
+            profileUrl: player.profileurl,
+            avatar: player.avatar,
+            avatarMedium: player.avatarmedium,
+            avatarFull: player.avatarfull,
+            personaState: player.personastate,
+            personaStateString: stateMap[player.personastate] || 'offline',
+            // Current game info (only present if in-game)
+            currentGame: player.gameid ? {
+                gameId: player.gameid,
+                gameName: player.gameextrainfo || 'Unknown Game',
+                serverIp: player.gameserverip
+            } : null,
+            lastLogoff: player.lastlogoff,
+            realName: player.realname,
+            countryCode: player.loccountrycode
+        }));
+
+        return {
+            success: true,
+            players
+        };
+
+    } catch (error) {
+        console.error('Error fetching players summaries:', error);
+        return { success: false, error: error.message, players: [] };
+    }
+}
+
+/**
+ * Gets friends with their current status and game info
+ * Combines getFriendList and getPlayersSummaries
+ * @param {string} steamId - The 64-bit Steam ID of the user
+ * @returns {Promise<{success: boolean, friends?: Array, error?: string}>}
+ */
+async function getFriendsWithStatus(steamId) {
+    try {
+        // First get the friend list
+        const friendListResult = await getFriendList(steamId);
+
+        if (!friendListResult.success || !friendListResult.friends || friendListResult.friends.length === 0) {
+            return friendListResult;
+        }
+
+        // Get all friend Steam IDs
+        const friendIds = friendListResult.friends.map(f => f.steamId);
+
+        // Get detailed info for all friends (in batches of 100)
+        const allPlayers = [];
+        for (let i = 0; i < friendIds.length; i += 100) {
+            const batch = friendIds.slice(i, i + 100);
+            const summariesResult = await getPlayersSummaries(batch);
+            if (summariesResult.success && summariesResult.players) {
+                allPlayers.push(...summariesResult.players);
+            }
+        }
+
+        // Create a map for quick lookup
+        const playerMap = new Map(allPlayers.map(p => [p.steamId, p]));
+
+        // Combine friend list with player info
+        const friends = friendListResult.friends.map(friend => {
+            const playerInfo = playerMap.get(friend.steamId);
+            return {
+                ...friend,
+                ...playerInfo
+            };
+        });
+
+        // Sort: online/in-game first, then by name
+        friends.sort((a, b) => {
+            // In-game players first
+            if (a.currentGame && !b.currentGame) return -1;
+            if (!a.currentGame && b.currentGame) return 1;
+            // Then online players
+            if (a.personaState > 0 && b.personaState === 0) return -1;
+            if (a.personaState === 0 && b.personaState > 0) return 1;
+            // Then by name
+            return (a.personaName || '').localeCompare(b.personaName || '');
+        });
+
+        return {
+            success: true,
+            friends
+        };
+
+    } catch (error) {
+        console.error('Error fetching friends with status:', error);
+        return { success: false, error: error.message, friends: [] };
+    }
+}
+
+/**
+ * Gets the number of current players for a specific game
+ * @param {number} appId - The Steam App ID of the game
+ * @returns {Promise<{success: boolean, playerCount?: number, error?: string}>}
+ */
+async function getCurrentPlayerCount(appId) {
+    try {
+        const url = `${STEAM_API_BASE}/ISteamUserStats/GetNumberOfCurrentPlayers/v1/?appid=${appId}&format=json`;
+
+        const response = await fetch(url);
+
+        if (!response.ok) {
+            throw new Error(`Steam API responded with status: ${response.status}`);
+        }
+
+        const data = await response.json();
+
+        return {
+            success: true,
+            playerCount: data.response?.player_count || 0
+        };
+
+    } catch (error) {
+        console.error('Error fetching player count:', error);
+        return { success: false, error: error.message, playerCount: 0 };
+    }
+}
+
 export const steamService = {
     getOwnedGames,
     getPlayerSummary,
     resolveVanityURL,
     getRecentlyPlayedGames,
-    getPlayerAchievements
+    getPlayerAchievements,
+    getCurrentPlayerCount,
+    getSteamLevel,
+    getSteamBadges,
+    getFriendList,
+    getPlayersSummaries,
+    getFriendsWithStatus
 };

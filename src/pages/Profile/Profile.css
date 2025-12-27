@@ -93,6 +93,43 @@
     transform: scale(1.1);
 }
 
+/* Steam Avatar Toggle */
+.avatar-steam-toggle {
+    position: absolute;
+    bottom: 4px;
+    left: 4px;
+    width: 28px;
+    height: 28px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(27, 40, 56, 0.9);
+    border: 2px solid rgba(102, 192, 244, 0.3);
+    border-radius: 50%;
+    color: rgba(102, 192, 244, 0.7);
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.avatar-steam-toggle:hover {
+    background: rgba(42, 71, 94, 0.95);
+    border-color: #66c0f4;
+    color: #66c0f4;
+    transform: scale(1.1);
+}
+
+.avatar-steam-toggle.active {
+    background: linear-gradient(135deg, #1a9fff, #66c0f4);
+    border-color: #66c0f4;
+    color: white;
+    box-shadow: 0 0 10px rgba(102, 192, 244, 0.5);
+}
+
+.avatar.steam-avatar {
+    border-color: #66c0f4;
+    box-shadow: 0 0 20px rgba(102, 192, 244, 0.3), var(--shadow-xl);
+}
+
 .status-indicator {
     position: absolute;
     top: 8px;

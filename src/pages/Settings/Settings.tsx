@@ -11,13 +11,38 @@ import {
     Moon,
     Sun,
     ChevronRight,
-    ExternalLink
+    ExternalLink,
+    Link,
+    Unlink,
+    Loader2,
+    User,
+    Gamepad2
 } from 'lucide-react';
 import { useSettingsStore } from '../../stores';
+import { useLinkedAccountsStore } from '../../stores/linkedAccountsStore';
 import './Settings.css';
+
+// Steam icon SVG component
+const SteamIcon = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 0C5.373 0 0 5.373 0 12c0 5.628 3.875 10.35 9.101 11.647l2.063-2.063a8.002 8.002 0 0 1-4.164-4.164l-2.063 2.063A11.944 11.944 0 0 1 0 12C0 5.373 5.373 0 12 0zm0 2.182c-5.422 0-9.818 4.396-9.818 9.818 0 2.164.7 4.164 1.885 5.79l3.344-3.344a3.27 3.27 0 0 1 2.952-4.355c.182-.009.364.006.545.042l1.974-2.84a5.09 5.09 0 0 1 5.09 5.09v.364l2.814-1.974a3.273 3.273 0 0 1 4.396 2.952c.009.182-.006.364-.042.545l3.344 3.344a9.772 9.772 0 0 0 1.885-5.79c0-5.422-4.396-9.818-9.818-9.818z" />
+        <circle cx="8.5" cy="14.5" r="2.5" />
+        <circle cx="16" cy="9" r="2" />
+    </svg>
+);
 
 export function Settings() {
     const { settings, updateSettings } = useSettingsStore();
+    const {
+        steamAccount,
+        isLinkingSteam,
+        steamLevel,
+        steamGames,
+        linkSteamWithOpenID,
+        unlinkSteamAccount,
+        error
+    } = useLinkedAccountsStore();
+
 
     const settingsSections = [
         {
@@ -213,6 +238,82 @@ export function Settings() {
                         </motion.section>
                     ))}
                 </div>
+
+                {/* Steam Linked Accounts Section */}
+                <motion.section
+                    className="settings-section linked-accounts-section"
+                    initial={{ opacity: 0, y: 20 }}
+                    animate={{ opacity: 1, y: 0 }}
+                    transition={{ delay: 0.25 }}
+                >
+                    <div className="section-header">
+                        <Link size={20} />
+                        <h2>Cuentas vinculadas</h2>
+                    </div>
+
+                    <div className="section-items">
+                        {/* Steam Account */}
+                        <div className="linked-account-card">
+                            <div className="account-platform">
+                                <SteamIcon />
+                                <span>Steam</span>
+                            </div>
+
+                            {steamAccount ? (
+                                <div className="account-info">
+                                    <div className="account-avatar">
+                                        {steamAccount.avatarUrl ? (
+                                            <img src={steamAccount.avatarUrl} alt={steamAccount.username} />
+                                        ) : (
+                                            <User size={24} />
+                                        )}
+                                    </div>
+                                    <div className="account-details">
+                                        <span className="account-username">{steamAccount.username}</span>
+                                        <span className="account-meta">
+                                            {steamLevel !== null && <span className="steam-level">Nivel {steamLevel}</span>}
+                                            {steamGames.length > 0 && <span className="steam-games"><Gamepad2 size={12} /> {steamGames.length} juegos</span>}
+                                        </span>
+                                    </div>
+                                    <button
+                                        className="btn btn-ghost btn-sm unlink-btn"
+                                        onClick={unlinkSteamAccount}
+                                    >
+                                        <Unlink size={14} />
+                                        Desvincular
+                                    </button>
+                                </div>
+                            ) : (
+                                <div className="account-not-linked">
+                                    <span>No vinculada</span>
+                                    <button
+                                        className="btn btn-steam"
+                                        onClick={linkSteamWithOpenID}
+                                        disabled={isLinkingSteam}
+                                    >
+                                        {isLinkingSteam ? (
+                                            <>
+                                                <Loader2 size={16} className="spinner" />
+                                                Conectando...
+                                            </>
+                                        ) : (
+                                            <>
+                                                <SteamIcon />
+                                                Iniciar sesión con Steam
+                                            </>
+                                        )}
+                                    </button>
+                                </div>
+                            )}
+                        </div>
+
+                        {error && (
+                            <div className="account-error">
+                                {error}
+                            </div>
+                        )}
+                    </div>
+                </motion.section>
 
                 {/* About Section */}
                 <motion.section
