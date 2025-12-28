@@ -132,6 +132,7 @@ export function Library() {
         steamAccount,
         epicAccount,
         steamGames,
+        epicGames,
         loadLinkedAccounts,
         launchSteamGame
     } = useLinkedAccountsStore();
@@ -198,6 +199,25 @@ export function Library() {
             });
         }
 
+        // Add Epic games (Epic games from API may or may not be installed)
+        if (epicAccount) {
+            epicGames.forEach(game => {
+                // Check if already in unified (e.g. from installed games)
+                const isInstalled = allInstalledGames.some(ig => ig.platform === 'epic' && (ig.id === game.id || ig.name === game.title));
+
+                if (!isInstalled) {
+                    unified.push({
+                        id: `epic_${game.id}`,
+                        name: game.title,
+                        platform: 'epic',
+                        imageUrl: game.image,
+                        isInstalled: false,
+                        originalGame: undefined
+                    });
+                }
+            });
+        }
+
         // Add other platform games (these are detected as installed)
         allInstalledGames.forEach(game => {
             unified.push({
@@ -225,7 +245,7 @@ export function Library() {
         });
 
         return unified;
-    }, [steamAccount, steamGames, allInstalledGames, games]);
+    }, [steamAccount, epicAccount, steamGames, epicGames, allInstalledGames, games]);
 
     // Filter games
     const filteredGames = useMemo(() => {

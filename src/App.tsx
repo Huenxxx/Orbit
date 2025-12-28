@@ -4,6 +4,7 @@ import { TitleBar, Sidebar, AuthScreen, NotificationToast, EditGameModal } from 
 import { Dashboard, Library, Settings, Profile, Catalog, Achievements, GameDetails, Downloads } from './pages';
 import { useUIStore, useSettingsStore, useGamesStore } from './stores';
 import { useAuthStore } from './stores/authStore';
+import { useLinkedAccountsStore } from './stores/linkedAccountsStore';
 import './App.css';
 
 // Placeholder pages for navigation
@@ -37,10 +38,12 @@ function App() {
   const { loadSettings, settings } = useSettingsStore();
   const { user, isInitialized, initialize, isAvailable } = useAuthStore();
   const { selectedGame, setSelectedGame } = useGamesStore();
+  const { loadLinkedAccounts } = useLinkedAccountsStore();
 
   useEffect(() => {
     loadSettings();
     initialize();
+    loadLinkedAccounts();
   }, []);
 
   // Apply theme

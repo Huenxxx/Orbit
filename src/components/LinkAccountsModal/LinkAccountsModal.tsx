@@ -56,7 +56,12 @@ export function LinkAccountsModal({ onClose }: LinkAccountsModalProps) {
         linkSteamAccountAuto,
         unlinkSteamAccount,
         syncSteamGames,
-        detectLocalSteam
+        detectLocalSteam,
+        epicAccount,
+        isLinkingEpic,
+        linkEpicAccount,
+        unlinkEpicAccount,
+        syncEpicGames
     } = useLinkedAccountsStore();
 
     const {
@@ -90,6 +95,14 @@ export function LinkAccountsModal({ onClose }: LinkAccountsModalProps) {
             showError('Error', 'Error al vincular Steam');
         } finally {
             setIsOpeningSteam(false);
+        }
+    };
+
+    const handleEpicLogin = async () => {
+        try {
+            await linkEpicAccount();
+        } catch {
+            showError('Error', 'No se pudo vincular Epic Games');
         }
     };
 
@@ -188,13 +201,18 @@ export function LinkAccountsModal({ onClose }: LinkAccountsModalProps) {
                         </div>
 
                         {/* Epic Games */}
-                        <div className={`platform-row epic ${epicInfo?.installed ? 'linked' : ''}`}>
+                        <div className={`platform-row epic ${epicAccount || epicInfo?.installed ? 'linked' : ''}`}>
                             <div className="platform-icon-compact epic-icon">
                                 <EpicIcon />
                             </div>
                             <div className="platform-info-compact">
                                 <span className="platform-name">Epic Games</span>
-                                {epicInfo?.installed ? (
+                                {epicAccount ? (
+                                    <span className="platform-status linked" style={{ fontSize: '0.65rem' }}>
+                                        <CheckCircle2 size={12} />
+                                        {epicAccount.username}
+                                    </span>
+                                ) : epicInfo?.installed ? (
                                     <span className="platform-status linked">
                                         <CheckCircle2 size={12} />
                                         {epicInfo.gameCount} juegos
@@ -204,8 +222,35 @@ export function LinkAccountsModal({ onClose }: LinkAccountsModalProps) {
                                 )}
                             </div>
                             <div className="platform-action">
-                                {epicInfo?.installed && (
-                                    <span className="auto-detected">Auto</span>
+                                {epicAccount ? (
+                                    <>
+                                        <button
+                                            className="btn-icon-sm"
+                                            onClick={() => syncEpicGames()}
+                                            title="Sincronizar"
+                                        >
+                                            <RefreshCw size={14} />
+                                        </button>
+                                        <button
+                                            className="btn-icon-sm danger"
+                                            onClick={unlinkEpicAccount}
+                                            title="Desvincular"
+                                        >
+                                            <Unlink size={14} />
+                                        </button>
+                                    </>
+                                ) : (
+                                    <button
+                                        className="btn-link-sm epic"
+                                        onClick={handleEpicLogin}
+                                        disabled={isLinkingEpic}
+                                    >
+                                        {isLinkingEpic ? (
+                                            <Loader2 size={14} className="spinning" />
+                                        ) : (
+                                            'Vincular'
+                                        )}
+                                    </button>
                                 )}
                             </div>
                         </div>

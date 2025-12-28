@@ -55,7 +55,15 @@ export function FriendsList() {
         clearError
     } = useFriendsStore();
 
-    const { steamAccount, steamFriends, isLoadingFriends: isLoadingSteamFriends, getSteamFriends } = useLinkedAccountsStore();
+    const {
+        steamAccount,
+        steamFriends,
+        epicAccount,
+        epicFriends,
+        isLoadingFriends: isLoadingLinkedFriends,
+        getSteamFriends,
+        getEpicFriends
+    } = useLinkedAccountsStore();
 
     // Load friends on mount
     useEffect(() => {
@@ -73,11 +81,19 @@ export function FriendsList() {
     useEffect(() => {
         if (steamAccount) {
             getSteamFriends();
-            // Optional: Set up an interval for refreshing steam friends
             const interval = setInterval(() => getSteamFriends(), 180000); // 3 minutes
             return () => clearInterval(interval);
         }
     }, [steamAccount, getSteamFriends]);
+
+    // Load epic friends when connected
+    useEffect(() => {
+        if (epicAccount) {
+            getEpicFriends();
+            const interval = setInterval(() => getEpicFriends(), 180000); // 3 minutes
+            return () => clearInterval(interval);
+        }
+    }, [epicAccount, getEpicFriends]);
 
     // Search users with debounce
     const handleSearch = useCallback(async (query: string) => {
@@ -163,8 +179,12 @@ export function FriendsList() {
     const onlineSteamFriends = steamFriends.filter(f => f.personaStateString !== 'offline');
     const offlineSteamFriends = steamFriends.filter(f => f.personaStateString === 'offline');
 
-    const hasAnyFriends = friends.length > 0 || steamFriends.length > 0;
-    const totalOnlineCount = onlineFriends.length + onlineSteamFriends.length;
+    // Split epic friends by status
+    const onlineEpicFriends = epicFriends.filter(f => f.personaStateString !== 'offline');
+    const offlineEpicFriends = epicFriends.filter(f => f.personaStateString === 'offline');
+
+    const hasAnyFriends = friends.length > 0 || steamFriends.length > 0 || epicFriends.length > 0;
+    const totalOnlineCount = onlineFriends.length + onlineSteamFriends.length + onlineEpicFriends.length;
 
     return (
         <div className="friends-list">
@@ -312,7 +332,7 @@ export function FriendsList() {
                         animate={{ opacity: 1, height: 'auto' }}
                         exit={{ opacity: 0, height: 0 }}
                     >
-                        {(isLoading || isLoadingSteamFriends) && friends.length === 0 && steamFriends.length === 0 ? (
+                        {isLoadingLinkedFriends && friends.length === 0 && steamFriends.length === 0 && epicFriends.length === 0 ? (
                             <div className="friends-loading">
                                 <Loader2 size={20} className="spinner" />
                             </div>
@@ -361,7 +381,7 @@ export function FriendsList() {
                                         {onlineSteamFriends.map((friend) => (
                                             <div key={friend.steamId} className={`friend-item steam-sidebar ${friend.currentGame ? 'in-game' : ''}`}>
                                                 <div className="friend-avatar-sidebar">
-                                                    <img src={friend.avatarFull} alt={friend.personaName} className="steam-avatar-img" />
+                                                    <img src={friend.avatarFull || 'https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg'} alt={friend.personaName} className="steam-avatar-img" />
                                                     <div
                                                         className="friend-status-indicator"
                                                         style={{ backgroundColor: getSteamStatusColor(friend.personaStateString, !!friend.currentGame) }}
@@ -382,6 +402,44 @@ export function FriendsList() {
                                                             friend.personaStateString === 'online' ? 'En línea' :
                                                                 friend.personaStateString === 'away' ? 'Ausente' :
                                                                     friend.personaStateString === 'busy' ? 'Ocupado' : 'Conectado'
+                                                        )}
+                                                    </span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Epic Online Friends */}
+                                {onlineEpicFriends.length > 0 && (
+                                    <div className="friends-section">
+                                        <div className="friends-section-header">
+                                            Epic Games — {onlineEpicFriends.length}
+                                        </div>
+                                        {onlineEpicFriends.map((friend) => (
+                                            <div key={friend.steamId} className={`friend-item epic-sidebar ${friend.currentGame ? 'in-game' : ''}`}>
+                                                <div className="friend-avatar-sidebar">
+                                                    <div className="epic-avatar-placeholder">
+                                                        {friend.personaName[0].toUpperCase()}
+                                                    </div>
+                                                    <div
+                                                        className="friend-status-indicator"
+                                                        style={{ backgroundColor: friend.currentGame ? '#ffffff' : '#ffffff' }}
+                                                    />
+                                                    <div className="epic-badge-sidebar">
+                                                        <img src="https://static-assets-prod.epicgames.com/static/favicons/favicon.ico" width="10" height="10" alt="Epic" />
+                                                    </div>
+                                                </div>
+                                                <div className="friend-info">
+                                                    <span className="friend-name">{friend.personaName}</span>
+                                                    <span className="friend-status">
+                                                        {friend.currentGame ? (
+                                                            <>
+                                                                <Gamepad2 size={12} />
+                                                                Jugando a {friend.currentGame.gameName}
+                                                            </>
+                                                        ) : (
+                                                            friend.personaStateString === 'online' ? 'En línea' : 'Desconectado'
                                                         )}
                                                     </span>
                                                 </div>
@@ -421,10 +479,36 @@ export function FriendsList() {
                                         {offlineSteamFriends.map((friend) => (
                                             <div key={friend.steamId} className="friend-item steam-sidebar offline">
                                                 <div className="friend-avatar-sidebar">
-                                                    <img src={friend.avatarFull} alt={friend.personaName} className="steam-avatar-img" />
+                                                    <img src={friend.avatarFull || 'https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg'} alt={friend.personaName} className="steam-avatar-img" />
                                                     <div className="friend-status-indicator" style={{ backgroundColor: '#898989' }} />
                                                     <div className="steam-badge-sidebar">
                                                         <SteamIcon size={10} />
+                                                    </div>
+                                                </div>
+                                                <div className="friend-info">
+                                                    <span className="friend-name">{friend.personaName}</span>
+                                                    <span className="friend-status">Desconectado</span>
+                                                </div>
+                                            </div>
+                                        ))}
+                                    </div>
+                                )}
+
+                                {/* Epic Offline Friends */}
+                                {offlineEpicFriends.length > 0 && (
+                                    <div className="friends-section">
+                                        <div className="friends-section-header">
+                                            Epic Games Desconectados — {offlineEpicFriends.length}
+                                        </div>
+                                        {offlineEpicFriends.map((friend) => (
+                                            <div key={friend.steamId} className="friend-item epic-sidebar offline">
+                                                <div className="friend-avatar-sidebar">
+                                                    <div className="epic-avatar-placeholder">
+                                                        {friend.personaName[0].toUpperCase()}
+                                                    </div>
+                                                    <div className="friend-status-indicator" style={{ backgroundColor: '#898989' }} />
+                                                    <div className="epic-badge-sidebar">
+                                                        <img src="https://static-assets-prod.epicgames.com/static/favicons/favicon.ico" width="10" height="10" alt="Epic" />
                                                     </div>
                                                 </div>
                                                 <div className="friend-info">

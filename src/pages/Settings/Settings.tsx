@@ -1,3 +1,4 @@
+import { useState, useEffect } from 'react';
 import { motion } from 'framer-motion';
 import {
     Settings as SettingsIcon,
@@ -31,6 +32,13 @@ const SteamIcon = () => (
     </svg>
 );
 
+// Epic Games icon SVG component
+const EpicIcon = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 0L0 2.4v19.2L12 24l12-2.4V2.4L12 0zm10 20.4l-10 2-10-2V3.6l10-2 10 2v16.8zM12 5.4l-6 1.2v10.8l6 1.2 6-1.2V6.6l-6-1.2zm4 10.2l-4 .8-4-.8V8.4l4-.8 4 .8v7.2z" />
+    </svg>
+);
+
 export function Settings() {
     const { settings, updateSettings } = useSettingsStore();
     const {
@@ -40,9 +48,48 @@ export function Settings() {
         steamGames,
         linkSteamWithOpenID,
         unlinkSteamAccount,
+        epicAccount,
+        isLinkingEpic,
+        epicGames,
+        linkEpicAccount,
+        unlinkEpicAccount,
         error
     } = useLinkedAccountsStore();
 
+
+    const [epicClientId, setEpicClientId] = useState('');
+    const [epicClientSecret, setEpicClientSecret] = useState('');
+    const [isSavingEpicKeys, setIsSavingEpicKeys] = useState(false);
+    const [saveSuccess, setSaveSuccess] = useState(false);
+
+    // Load Epic keys on mount
+    useEffect(() => {
+        const loadEpicKeys = async () => {
+            const keys = await (window as any).require('electron').ipcRenderer.invoke('epic-get-api-keys');
+            if (keys) {
+                setEpicClientId(keys.clientId || '');
+                setEpicClientSecret(keys.clientSecret || '');
+            }
+        };
+        loadEpicKeys();
+    }, []);
+
+    const handleSaveEpicKeys = async () => {
+        setIsSavingEpicKeys(true);
+        setSaveSuccess(false);
+        try {
+            await (window as any).require('electron').ipcRenderer.invoke('epic-set-api-keys', {
+                clientId: epicClientId,
+                clientSecret: epicClientSecret
+            });
+            setSaveSuccess(true);
+            setTimeout(() => setSaveSuccess(false), 3000);
+        } catch (err) {
+            console.error('Error saving Epic keys:', err);
+        } finally {
+            setIsSavingEpicKeys(false);
+        }
+    };
 
     const settingsSections = [
         {
@@ -254,57 +301,161 @@ export function Settings() {
                     <div className="section-items">
                         {/* Steam Account */}
                         <div className="linked-account-card">
-                            <div className="account-platform">
-                                <SteamIcon />
-                                <span>Steam</span>
+                            <div className="account-main-row">
+                                <div className="account-platform">
+                                    <SteamIcon />
+                                    <span>Steam</span>
+                                </div>
+
+                                {steamAccount ? (
+                                    <div className="account-info">
+                                        <div className="account-avatar">
+                                            {steamAccount.avatarUrl ? (
+                                                <img src={steamAccount.avatarUrl} alt={steamAccount.username} />
+                                            ) : (
+                                                <User size={24} />
+                                            )}
+                                        </div>
+                                        <div className="account-details">
+                                            <span className="account-username">{steamAccount.username}</span>
+                                            <span className="account-meta">
+                                                {steamLevel !== null && <span className="steam-level">Nivel {steamLevel}</span>}
+                                                {steamGames.length > 0 && <span className="steam-games"><Gamepad2 size={12} /> {steamGames.length} juegos</span>}
+                                            </span>
+                                        </div>
+                                        <button
+                                            className="btn btn-ghost btn-sm unlink-btn"
+                                            onClick={unlinkSteamAccount}
+                                        >
+                                            <Unlink size={14} />
+                                            Desvincular
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="account-not-linked">
+                                        <span>No vinculada</span>
+                                        <button
+                                            className="btn btn-steam"
+                                            onClick={linkSteamWithOpenID}
+                                            disabled={isLinkingSteam}
+                                        >
+                                            {isLinkingSteam ? (
+                                                <>
+                                                    <Loader2 size={16} className="spinner" />
+                                                    Conectando...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <SteamIcon />
+                                                    Iniciar sesión con Steam
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                )}
+                            </div>
+                        </div>
+
+                        {/* Epic Games Account */}
+                        <div className="linked-account-card">
+                            <div className="account-main-row">
+                                <div className="account-platform">
+                                    <span className="epic-icon-container">
+                                        <EpicIcon />
+                                    </span>
+                                    <span>Epic Games</span>
+                                </div>
+
+                                {epicAccount ? (
+                                    <div className="account-info">
+                                        <div className="account-avatar">
+                                            <div className="epic-avatar-placeholder">
+                                                {epicAccount.username[0].toUpperCase()}
+                                            </div>
+                                        </div>
+                                        <div className="account-details">
+                                            <span className="account-username">{epicAccount.username}</span>
+                                            <span className="account-meta">
+                                                {epicGames.length > 0 && <span className="epic-games"><Gamepad2 size={12} /> {epicGames.length} juegos</span>}
+                                            </span>
+                                        </div>
+                                        <button
+                                            className="btn btn-ghost btn-sm unlink-btn"
+                                            onClick={unlinkEpicAccount}
+                                        >
+                                            <Unlink size={14} />
+                                            Desvincular
+                                        </button>
+                                    </div>
+                                ) : (
+                                    <div className="account-not-linked">
+                                        <span>No vinculada</span>
+                                        <button
+                                            className="btn btn-epic"
+                                            onClick={linkEpicAccount}
+                                            disabled={isLinkingEpic}
+                                        >
+                                            {isLinkingEpic ? (
+                                                <>
+                                                    <Loader2 size={16} className="spinner" />
+                                                    Conectando...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <EpicIcon />
+                                                    Iniciar sesión con Epic
+                                                </>
+                                            )}
+                                        </button>
+                                    </div>
+                                )}
                             </div>
 
-                            {steamAccount ? (
-                                <div className="account-info">
-                                    <div className="account-avatar">
-                                        {steamAccount.avatarUrl ? (
-                                            <img src={steamAccount.avatarUrl} alt={steamAccount.username} />
-                                        ) : (
-                                            <User size={24} />
-                                        )}
-                                    </div>
-                                    <div className="account-details">
-                                        <span className="account-username">{steamAccount.username}</span>
-                                        <span className="account-meta">
-                                            {steamLevel !== null && <span className="steam-level">Nivel {steamLevel}</span>}
-                                            {steamGames.length > 0 && <span className="steam-games"><Gamepad2 size={12} /> {steamGames.length} juegos</span>}
-                                        </span>
-                                    </div>
-                                    <button
-                                        className="btn btn-ghost btn-sm unlink-btn"
-                                        onClick={unlinkSteamAccount}
-                                    >
-                                        <Unlink size={14} />
-                                        Desvincular
-                                    </button>
+                            {/* Advanced Epic Configuration */}
+                            <div className="epic-advanced-config">
+                                <div className="config-header">
+                                    <Shield size={14} />
+                                    <span>Configuración Avanzada (Full Link)</span>
                                 </div>
-                            ) : (
-                                <div className="account-not-linked">
-                                    <span>No vinculada</span>
-                                    <button
-                                        className="btn btn-steam"
-                                        onClick={linkSteamWithOpenID}
-                                        disabled={isLinkingSteam}
-                                    >
-                                        {isLinkingSteam ? (
-                                            <>
-                                                <Loader2 size={16} className="spinner" />
-                                                Conectando...
-                                            </>
-                                        ) : (
-                                            <>
-                                                <SteamIcon />
-                                                Iniciar sesión con Steam
-                                            </>
-                                        )}
-                                    </button>
+                                <p className="config-help">
+                                    Desbloquea amigos y logros introduciendo tus propias credenciales de desarrollador de Epic Games.
+                                </p>
+                                <div className="config-fields">
+                                    <div className="config-field">
+                                        <label>Client ID</label>
+                                        <input
+                                            type="password"
+                                            value={epicClientId}
+                                            onChange={(e) => setEpicClientId(e.target.value)}
+                                            placeholder="Introduce tu Client ID"
+                                            autoComplete="off"
+                                        />
+                                    </div>
+                                    <div className="config-field">
+                                        <label>Client Secret</label>
+                                        <input
+                                            type="password"
+                                            value={epicClientSecret}
+                                            onChange={(e) => setEpicClientSecret(e.target.value)}
+                                            placeholder="Introduce tu Client Secret"
+                                            autoComplete="off"
+                                        />
+                                    </div>
                                 </div>
-                            )}
+                                <button
+                                    className={`btn btn-sm btn-save-keys ${saveSuccess ? 'btn-success' : 'btn-ghost'}`}
+                                    onClick={handleSaveEpicKeys}
+                                    disabled={isSavingEpicKeys}
+                                >
+                                    {isSavingEpicKeys ? (
+                                        <Loader2 size={14} className="spinner" />
+                                    ) : saveSuccess ? (
+                                        '✓ Credenciales Guardadas'
+                                    ) : (
+                                        'Guardar credenciales'
+                                    )}
+                                </button>
+                            </div>
                         </div>
 
                         {error && (
