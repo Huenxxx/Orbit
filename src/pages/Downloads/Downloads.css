@@ -300,6 +300,9 @@
     display: flex;
     align-items: center;
     gap: var(--space-2);
+    position: relative;
+    z-index: 100;
+    pointer-events: auto;
 }
 
 .download-actions .btn-action {
@@ -314,6 +317,9 @@
     color: var(--text-secondary);
     cursor: pointer;
     transition: all var(--transition-fast);
+    pointer-events: auto;
+    position: relative;
+    z-index: 101;
 }
 
 .download-actions .btn-action:hover {

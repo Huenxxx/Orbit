@@ -48,8 +48,81 @@ const store = new Store({
 });
 
 let mainWindow;
+let pendingMagnetUri = null; // Store magnet URI until window is ready
 
 const isDev = process.env.NODE_ENV !== 'production' || !app.isPackaged;
+
+// ==========================================
+// MAGNET PROTOCOL HANDLER
+// ==========================================
+
+// Register as default handler for magnet: links
+if (process.defaultApp) {
+  // Development: need to pass the script path
+  if (process.argv.length >= 2) {
+    app.setAsDefaultProtocolClient('magnet', process.execPath, [path.resolve(process.argv[1])]);
+  }
+} else {
+  // Production
+  app.setAsDefaultProtocolClient('magnet');
+}
+
+// Check if a magnet URI was passed via command line (first launch)
+function extractMagnetFromArgs(args) {
+  for (const arg of args) {
+    if (arg.startsWith('magnet:')) {
+      return arg;
+    }
+  }
+  return null;
+}
+
+// Handle magnet URI - add to downloads
+function handleMagnetUri(magnetUri) {
+  console.log('Received magnet URI:', magnetUri);
+
+  if (!mainWindow || mainWindow.isDestroyed()) {
+    // Window not ready yet, store for later
+    pendingMagnetUri = magnetUri;
+    return;
+  }
+
+  // Send to renderer to handle the download
+  mainWindow.webContents.send('magnet-received', magnetUri);
+
+  // Focus the window
+  if (mainWindow.isMinimized()) mainWindow.restore();
+  mainWindow.focus();
+}
+
+// Single instance lock - prevent multiple instances and handle protocol
+const gotTheLock = app.requestSingleInstanceLock();
+
+if (!gotTheLock) {
+  app.quit();
+} else {
+  // Handle second instance (when clicking magnet link while app is running)
+  app.on('second-instance', (event, commandLine) => {
+    const magnetUri = extractMagnetFromArgs(commandLine);
+    if (magnetUri) {
+      handleMagnetUri(magnetUri);
+    }
+
+    // Focus existing window
+    if (mainWindow) {
+      if (mainWindow.isMinimized()) mainWindow.restore();
+      mainWindow.focus();
+    }
+  });
+}
+
+// Windows: Handle protocol when app is launched via magnet link
+app.on('open-url', (event, url) => {
+  event.preventDefault();
+  if (url.startsWith('magnet:')) {
+    handleMagnetUri(url);
+  }
+});
 
 function createWindow() {
   mainWindow = new BrowserWindow({
@@ -83,6 +156,21 @@ function createWindow() {
 
   // Initialize torrent service with main window
   torrentService.setMainWindow(mainWindow);
+
+  // When window is ready, check for pending magnet or command line args
+  mainWindow.webContents.on('did-finish-load', () => {
+    // Check command line args for magnet (first launch scenario)
+    const magnetFromArgs = extractMagnetFromArgs(process.argv);
+    if (magnetFromArgs) {
+      handleMagnetUri(magnetFromArgs);
+    }
+
+    // Process any pending magnet URI
+    if (pendingMagnetUri) {
+      handleMagnetUri(pendingMagnetUri);
+      pendingMagnetUri = null;
+    }
+  });
 }
 
 app.whenReady().then(createWindow);
@@ -458,7 +546,7 @@ ipcMain.handle('torrent-set-path', (_, newPath) => {
 // REPACK SEARCH SERVICE HANDLERS
 // ==========================================
 
-// Search repacks from all sources
+// Search repacks from FitGirl, DODI, ElAmigos
 ipcMain.handle('repacks-search', async (_, query) => {
   try {
     return await repackSearchService.searchRepacks(query);
@@ -472,9 +560,11 @@ ipcMain.handle('repacks-search', async (_, query) => {
 ipcMain.handle('repacks-get-magnet', async (_, { source, postUrl }) => {
   try {
     const magnet = await repackSearchService.getMagnetLink(source, postUrl);
-    return { success: !!magnet, magnet };
+    if (magnet && magnet.startsWith('magnet:')) {
+      return { success: true, magnet };
+    }
+    return { success: false, error: 'No se encontró enlace magnet' };
   } catch (error) {
     return { success: false, error: error.message };
   }
 });
-

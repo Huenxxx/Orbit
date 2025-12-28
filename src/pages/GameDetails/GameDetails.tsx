@@ -272,7 +272,7 @@ export function GameDetails() {
 
             // If no magnet URI, fetch it from the post URL
             if (!magnetUri && repack.postUrl && repack.source) {
-                showSuccess('Obteniendo enlace', 'Obteniendo enlace de descarga...');
+                showSuccess('Obteniendo enlace', 'Obteniendo enlace magnet...');
 
                 const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
                 if (ipcRenderer) {
@@ -284,7 +284,7 @@ export function GameDetails() {
                     if (result.success && result.magnet) {
                         magnetUri = result.magnet;
                     } else {
-                        showError('Error', 'No se pudo obtener el enlace magnet');
+                        showError('Error', 'No se pudo obtener el enlace magnet. Intenta con otro repack.');
                         return;
                     }
                 }
@@ -595,7 +595,7 @@ export function GameDetails() {
                                 {isSearchingRepacks ? (
                                     <div className="repack-loading">
                                         <Loader2 size={32} className="spinning" />
-                                        <p>Buscando repacks en FitGirl y DODI...</p>
+                                        <p>Buscando repacks en FitGirl, DODI y ElAmigos...</p>
                                     </div>
                                 ) : repackResults.length > 0 ? (
                                     <div className="repack-list">

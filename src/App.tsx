@@ -5,7 +5,12 @@ import { Dashboard, Library, Settings, Profile, Catalog, Achievements, GameDetai
 import { useUIStore, useSettingsStore, useGamesStore } from './stores';
 import { useAuthStore } from './stores/authStore';
 import { useLinkedAccountsStore } from './stores/linkedAccountsStore';
+import { useDownloadsStore } from './stores/downloadsStore';
+import { useNotificationStore } from './stores/notificationStore';
 import './App.css';
+
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+const electronRequire = (typeof window !== 'undefined' && (window as any).require) as ((module: string) => any) | undefined;
 
 // Placeholder pages for navigation
 function PlaceholderPage({ title, description }: { title: string; description?: string }) {
@@ -34,16 +39,44 @@ function LoadingScreen() {
 }
 
 function App() {
-  const { currentPage, modalOpen, closeModal } = useUIStore();
+  const { currentPage, modalOpen, closeModal, navigateTo } = useUIStore();
   const { loadSettings, settings } = useSettingsStore();
   const { user, isInitialized, initialize, isAvailable } = useAuthStore();
   const { selectedGame, setSelectedGame } = useGamesStore();
   const { loadLinkedAccounts } = useLinkedAccountsStore();
+  const { addDownload } = useDownloadsStore();
+  const { showSuccess, showError } = useNotificationStore();
 
   useEffect(() => {
     loadSettings();
     initialize();
     loadLinkedAccounts();
+
+    // Listen for magnet URIs from main process
+    const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
+    if (ipcRenderer) {
+      const handleMagnetReceived = async (_event: unknown, magnetUri: string) => {
+        console.log('Received magnet via IPC:', magnetUri);
+        try {
+          // Extract name from magnet URI if possible
+          const dnMatch = magnetUri.match(/dn=([^&]+)/);
+          const name = dnMatch ? decodeURIComponent(dnMatch[1].replace(/\+/g, ' ')) : 'Descarga de Torrent';
+
+          await addDownload(name, magnetUri);
+          showSuccess('Descarga añadida', `${name} ha sido añadido a la cola de descargas`);
+          navigateTo('downloads');
+        } catch (error) {
+          console.error('Error adding magnet download:', error);
+          showError('Error', 'No se pudo añadir la descarga');
+        }
+      };
+
+      ipcRenderer.on('magnet-received', handleMagnetReceived);
+
+      return () => {
+        ipcRenderer.removeListener('magnet-received', handleMagnetReceived);
+      };
+    }
   }, []);
 
   // Apply theme

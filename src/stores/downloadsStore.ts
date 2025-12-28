@@ -51,7 +51,7 @@ interface DownloadsState {
     loadDownloads: () => Promise<void>;
     clearCompleted: () => void;
 
-    // Search repacks (mock for now - could be integrated with real sources)
+    // Search repacks
     searchRepacks: (query: string) => Promise<RepackSource[]>;
 }
 
@@ -148,14 +148,18 @@ export const useDownloadsStore = create<DownloadsState>((set, get) => ({
     },
 
     cancelDownload: async (id) => {
+        // Remove from UI immediately for responsiveness
+        get().removeDownload(id);
+
+        // Then try to cancel in backend
         try {
             const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
             if (ipcRenderer) {
                 await ipcRenderer.invoke('torrent-cancel', id);
             }
-            get().removeDownload(id);
         } catch (error) {
-            console.error('Error cancelling download:', error);
+            console.error('Error cancelling download in backend:', error);
+            // Already removed from UI, so no need to do anything else
         }
     },
 
@@ -179,13 +183,30 @@ export const useDownloadsStore = create<DownloadsState>((set, get) => ({
         try {
             const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
             if (ipcRenderer) {
-                const downloads = await ipcRenderer.invoke('torrent-get-all');
-                if (downloads && Array.isArray(downloads)) {
-                    set({
-                        downloads,
-                        activeDownloads: downloads.filter(
-                            (d: DownloadItem) => d.status === 'downloading' || d.status === 'queued'
-                        ).length
+                const backendDownloads = await ipcRenderer.invoke('torrent-get-all');
+                if (backendDownloads && Array.isArray(backendDownloads)) {
+                    // Merge with existing local downloads to avoid losing newly added ones
+                    set(state => {
+                        const merged = [...state.downloads];
+
+                        // Update existing and add new from backend
+                        backendDownloads.forEach((bd: DownloadItem) => {
+                            const existingIndex = merged.findIndex(d => d.id === bd.id);
+                            if (existingIndex >= 0) {
+                                // Update with backend data (more accurate)
+                                merged[existingIndex] = { ...merged[existingIndex], ...bd };
+                            } else {
+                                // Add new download from backend
+                                merged.push(bd);
+                            }
+                        });
+
+                        return {
+                            downloads: merged,
+                            activeDownloads: merged.filter(
+                                d => d.status === 'downloading' || d.status === 'queued'
+                            ).length
+                        };
                     });
                 }
             }
@@ -202,7 +223,7 @@ export const useDownloadsStore = create<DownloadsState>((set, get) => ({
         }));
     },
 
-    // Search repacks from FitGirl and DODI via IPC
+    // Search repacks from FitGirl, DODI, ElAmigos
     searchRepacks: async (query) => {
         try {
             const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
@@ -217,23 +238,6 @@ export const useDownloadsStore = create<DownloadsState>((set, get) => ({
         }
     }
 }));
-
-// Helper function to get magnet link for a repack
-export async function getMagnetForRepack(source: string, postUrl: string): Promise<string | null> {
-    try {
-        const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
-        if (ipcRenderer) {
-            const result = await ipcRenderer.invoke('repacks-get-magnet', { source, postUrl });
-            if (result.success) {
-                return result.magnet;
-            }
-        }
-        return null;
-    } catch (error) {
-        console.error('Error getting magnet link:', error);
-        return null;
-    }
-}
 
 // Setup IPC listeners for download updates
 if (typeof window !== 'undefined' && electronRequire) {
@@ -252,6 +256,7 @@ if (typeof window !== 'undefined' && electronRequire) {
             seeds: number;
             eta: number;
         }) => {
+            console.log('Progress update:', data.id, data.progress + '%', (data.downloadSpeed / 1024 / 1024).toFixed(2) + ' MB/s');
             useDownloadsStore.getState().updateDownload(data.id, {
                 progress: data.progress,
                 downloadSpeed: data.downloadSpeed,
