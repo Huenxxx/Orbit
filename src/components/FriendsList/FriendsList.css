@@ -266,6 +266,126 @@
     position: relative;
 }
 
+.friend-item.steam-sidebar {
+    padding: var(--space-1) var(--space-4);
+}
+
+.friend-item.steam-sidebar .friend-avatar-sidebar {
+    position: relative;
+    width: 28px;
+    /* Compact icon */
+    height: 28px;
+    flex-shrink: 0;
+}
+
+.steam-avatar-img {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    object-fit: cover;
+    border: 1px solid rgba(102, 192, 244, 0.2);
+}
+
+.friend-item.steam-sidebar.in-game .steam-avatar-img {
+    border-color: #57cbde;
+    box-shadow: 0 0 8px rgba(87, 203, 222, 0.2);
+}
+
+.steam-badge-sidebar {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    width: 12px;
+    height: 12px;
+    background: #171a21;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: #66c0f4;
+    border: 1px solid rgba(102, 192, 244, 0.4);
+    z-index: 2;
+}
+
+.friend-item.steam-sidebar.offline {
+    opacity: 0.5;
+}
+
+.friend-item.steam-sidebar .friend-name {
+    font-size: 0.8rem;
+}
+
+.friend-item.steam-sidebar .friend-status {
+    font-size: 0.7rem;
+    color: #66c0f4;
+}
+
+.friend-item.steam-sidebar.in-game .friend-status {
+    color: #57cbde;
+}
+
+/* Epic Sidebar Styles */
+.friend-item.epic-sidebar .friend-avatar-sidebar {
+    position: relative;
+    width: 28px;
+    height: 28px;
+    flex-shrink: 0;
+}
+
+.epic-avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    border-radius: 50%;
+    background: #121212;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.6rem;
+    font-weight: 700;
+    color: #ffffff;
+}
+
+.friend-item.epic-sidebar.in-game .epic-avatar-placeholder {
+    border-color: #ffffff;
+    box-shadow: 0 0 8px rgba(255, 255, 255, 0.2);
+}
+
+.epic-badge-sidebar {
+    position: absolute;
+    top: -3px;
+    right: -3px;
+    width: 12px;
+    height: 12px;
+    background: #ffffff;
+    border-radius: 50%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    border: 1px solid rgba(0, 0, 0, 0.1);
+    z-index: 2;
+    padding: 1px;
+}
+
+.friend-item.epic-sidebar.offline {
+    opacity: 0.5;
+}
+
+.friend-item.epic-sidebar .friend-name {
+    font-size: 0.8rem;
+}
+
+.friend-item.epic-sidebar .friend-status {
+    font-size: 0.7rem;
+    color: #ffffff;
+    opacity: 0.7;
+}
+
+.friend-item.epic-sidebar.in-game .friend-status {
+    color: #ffffff;
+    opacity: 1;
+}
+
 .friend-item:hover {
     background: rgba(255, 255, 255, 0.05);
 }

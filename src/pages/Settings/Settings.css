@@ -292,3 +292,325 @@
     border-color: rgba(255, 255, 255, 0.1);
     color: var(--text-primary);
 }
+
+/* Linked Accounts Section */
+.linked-accounts-section {
+    margin-top: var(--space-6);
+}
+
+.linked-account-card {
+    display: flex;
+    flex-direction: column;
+    padding: var(--space-4) var(--space-5);
+    transition: background var(--transition-fast);
+    border-bottom: 1px solid rgba(255, 255, 255, 0.03);
+}
+
+.linked-account-card:last-child {
+    border-bottom: none;
+}
+
+.linked-account-card:hover {
+    background: rgba(255, 255, 255, 0.01);
+}
+
+.account-main-row {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    width: 100%;
+}
+
+.account-platform {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    color: var(--text-secondary);
+    font-weight: 500;
+    min-width: 120px;
+}
+
+.account-platform svg {
+    color: #66c0f4;
+    /* Steam blue color */
+}
+
+.epic-icon-container {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 24px;
+    height: 24px;
+    background: #ffffff;
+    border-radius: 4px;
+    padding: 4px;
+}
+
+.epic-icon-container svg {
+    color: #121212 !important;
+    width: 100%;
+    height: 100%;
+}
+
+.account-info {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+    flex: 1;
+    margin-left: var(--space-4);
+}
+
+.account-avatar {
+    width: 40px;
+    height: 40px;
+    border-radius: var(--radius-md);
+    overflow: hidden;
+    background: var(--color-stellar);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    color: var(--text-muted);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.account-avatar img {
+    width: 100%;
+    height: 100%;
+    object-fit: cover;
+}
+
+.account-details {
+    display: flex;
+    flex-direction: column;
+    gap: 1px;
+}
+
+.account-username {
+    font-weight: 600;
+    color: var(--text-primary);
+    font-size: var(--text-sm);
+}
+
+.account-meta {
+    display: flex;
+    align-items: center;
+    gap: var(--space-3);
+    font-size: var(--text-xs);
+    color: var(--text-muted);
+}
+
+.steam-level {
+    background: linear-gradient(135deg, #1a9fff, #66c0f4);
+    color: white;
+    padding: 1px 6px;
+    border-radius: var(--radius-sm);
+    font-weight: 600;
+}
+
+.steam-games {
+    display: flex;
+    align-items: center;
+    gap: 4px;
+}
+
+.account-not-linked {
+    display: flex;
+    align-items: center;
+    gap: var(--space-4);
+}
+
+.account-not-linked>span {
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+}
+
+/* Steam Login Button */
+.btn-steam {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    background: linear-gradient(135deg, #1b2838, #2a475e);
+    border: 1px solid #66c0f4;
+    border-radius: var(--radius-md);
+    color: #66c0f4;
+    font-size: var(--text-xs);
+    font-weight: 600;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.btn-steam:hover:not(:disabled) {
+    background: linear-gradient(135deg, #2a475e, #3d6580);
+    color: white;
+    box-shadow: 0 0 15px rgba(102, 192, 244, 0.3);
+}
+
+.btn-steam:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-steam svg {
+    width: 16px;
+    height: 16px;
+}
+
+.unlink-btn {
+    margin-left: auto;
+    color: var(--text-muted);
+    font-size: var(--text-xs);
+}
+
+.unlink-btn:hover {
+    color: var(--color-status-error);
+}
+
+/* Epic Login Button */
+.btn-epic {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    padding: var(--space-2) var(--space-4);
+    background: #ffffff;
+    border: none;
+    border-radius: var(--radius-md);
+    color: #121212;
+    font-size: var(--text-xs);
+    font-weight: 700;
+    cursor: pointer;
+    transition: all var(--transition-fast);
+}
+
+.btn-epic:hover:not(:disabled) {
+    background: #e5e5e5;
+    transform: translateY(-1px);
+    box-shadow: 0 4px 12px rgba(255, 255, 255, 0.2);
+}
+
+.btn-epic:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.btn-epic svg {
+    width: 14px;
+    height: 14px;
+}
+
+.epic-avatar-placeholder {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: #121212;
+    color: #ffffff;
+    font-weight: 700;
+    font-size: 1rem;
+}
+
+.account-error {
+    padding: var(--space-3) var(--space-5);
+    background: rgba(239, 68, 68, 0.1);
+    border-top: 1px solid rgba(239, 68, 68, 0.2);
+    color: var(--color-status-error);
+    font-size: var(--text-sm);
+}
+
+/* Epic Advanced Config */
+.epic-advanced-config {
+    margin-top: var(--space-4);
+    padding: var(--space-4);
+    background: rgba(255, 255, 255, 0.03);
+    border-radius: var(--radius-lg);
+    border: 1px solid rgba(255, 255, 255, 0.05);
+}
+
+.config-header {
+    display: flex;
+    align-items: center;
+    gap: var(--space-2);
+    margin-bottom: var(--space-3);
+    color: var(--color-primary-light);
+}
+
+.config-header span {
+    font-size: var(--text-xs);
+    font-weight: 700;
+    text-transform: uppercase;
+    letter-spacing: 0.1em;
+}
+
+.config-help {
+    font-size: var(--text-xs);
+    color: var(--text-tertiary);
+    margin-bottom: var(--space-4);
+    line-height: 1.4;
+}
+
+.config-fields {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: var(--space-4);
+    margin-bottom: var(--space-4);
+}
+
+.config-field {
+    display: flex;
+    flex-direction: column;
+    gap: var(--space-2);
+}
+
+.config-field label {
+    font-size: 10px;
+    color: var(--text-muted);
+    text-transform: uppercase;
+    font-weight: 700;
+    letter-spacing: 0.05em;
+}
+
+.config-field input {
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    border-radius: var(--radius-md);
+    padding: var(--space-3);
+    color: white;
+    font-size: var(--text-sm);
+    transition: all var(--transition-fast);
+}
+
+.config-field input:focus {
+    outline: none;
+    border-color: var(--color-primary);
+    background: rgba(255, 255, 255, 0.05);
+    box-shadow: 0 0 0 2px rgba(110, 64, 201, 0.2);
+}
+
+.btn-save-keys {
+    width: 100%;
+    justify-content: center;
+    font-size: var(--text-xs);
+    font-weight: 600;
+}
+
+.btn-success {
+    background: var(--color-status-success) !important;
+    color: white !important;
+    border: none !important;
+}
+
+/* Spinner animation */
+.spinner {
+    animation: spin 1s linear infinite;
+}
+
+@keyframes spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}

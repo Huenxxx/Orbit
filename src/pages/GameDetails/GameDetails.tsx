@@ -10,7 +10,6 @@ import {
     ExternalLink,
     Download,
     Cloud,
-    Trophy,
     Gamepad2,
     MoreHorizontal,
     Edit,
@@ -26,6 +25,8 @@ import { useLaunchersStore } from '../../stores/launchersStore';
 import { useNotificationStore } from '../../stores/notificationStore';
 import { useDownloadsStore, type RepackSource } from '../../stores/downloadsStore';
 import type { Game } from '../../types';
+import { SteamAchievements } from '../../components/SteamAchievements/SteamAchievements';
+import { SteamFriends } from '../../components/SteamFriends/SteamFriends';
 import './GameDetails.css';
 
 // eslint-disable-next-line @typescript-eslint/no-explicit-any
@@ -49,7 +50,7 @@ interface GameDetailsData {
 export function GameDetails() {
     const { navigateTo, gameDetailsData } = useUIStore();
     const { deleteGame, updateGame } = useGamesStore();
-    const { launchSteamGame } = useLinkedAccountsStore();
+    const { launchSteamGame, steamAccount } = useLinkedAccountsStore();
     const { launchGame: launchPlatformGame } = useLaunchersStore();
     const { showGameStarted, showError, showSuccess } = useNotificationStore();
     const { searchRepacks, addDownload } = useDownloadsStore();
@@ -63,6 +64,9 @@ export function GameDetails() {
     const [isSearchingRepacks, setIsSearchingRepacks] = useState(false);
     const [repackSearchDone, setRepackSearchDone] = useState(false);
 
+    // Steam specific states
+    const [playerCount, setPlayerCount] = useState<number | null>(null);
+
     // Get game data based on what was passed
     const data = gameDetailsData as GameDetailsData | null;
     const game = data?.game;
@@ -74,6 +78,30 @@ export function GameDetails() {
             navigateTo('library');
         }
     }, [game, platformGame, navigateTo]);
+
+    // Fetch player count for Steam games
+    useEffect(() => {
+        const fetchPlayerCount = async () => {
+            const steamAppId = platformGame?.platform === 'steam' ? platformGame.appId : undefined;
+            if (!steamAppId) return;
+
+            try {
+                const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
+                if (ipcRenderer) {
+                    const result = await ipcRenderer.invoke('steam-get-player-count', steamAppId);
+                    if (result.success) {
+                        setPlayerCount(result.playerCount);
+                    }
+                }
+            } catch (error) {
+                console.error('Error fetching player count:', error);
+            }
+        };
+
+        fetchPlayerCount();
+        const interval = setInterval(fetchPlayerCount, 60000); // Update every minute
+        return () => clearInterval(interval);
+    }, [platformGame]);
 
     if (!game && !platformGame) {
         return null;
@@ -282,6 +310,7 @@ export function GameDetails() {
     const platform = platformGame?.platform || game?.platform || 'custom';
     const playtime = platformGame?.playtime || game?.playtime || 0;
     const installPath = platformGame?.installPath || game?.installPath;
+    const steamAppId = platformGame?.platform === 'steam' ? platformGame.appId : undefined;
 
     // Determine if installed
     const isInstalled = platformGame?.isInstalled !== undefined
@@ -466,24 +495,24 @@ export function GameDetails() {
 
                 {/* Sidebar */}
                 <aside className="content-sidebar">
-                    {/* Achievements */}
-                    <div className="sidebar-section">
-                        <div className="section-header">
-                            <Trophy size={18} />
-                            <h3>Logros</h3>
-                            <span className="achievement-count">0/0</span>
+                    {/* Steam Achievements */}
+                    {(platform === 'steam' && steamAppId) && (
+                        <div className="sidebar-section">
+                            <SteamAchievements
+                                steamAppId={steamAppId}
+                                steamId={steamAccount?.userId}
+                                gameName={title}
+                            />
                         </div>
-                        <div className="achievement-notice">
-                            <a href="#">¡Inicia sesión para sincronizar tus logros!</a>
-                        </div>
-                        <div className="achievements-preview">
-                            <div className="achievement-placeholder">
-                                <div className="achievement-icon" />
-                                <span>Sin logros disponibles</span>
-                            </div>
-                        </div>
-                        <a href="#" className="view-all-link">Ver todos los logros</a>
-                    </div>
+                    )}
+
+                    {/* Steam Friends */}
+                    {(platform === 'steam' && steamAppId) && (
+                        <SteamFriends
+                            appId={steamAppId}
+                            steamId={steamAccount?.userId}
+                        />
+                    )}
 
                     {/* Stats */}
                     <div className="sidebar-section">
@@ -500,7 +529,9 @@ export function GameDetails() {
                             <div className="stat-item">
                                 <Gamepad2 size={14} />
                                 <span className="stat-label">Jugadores activos</span>
-                                <span className="stat-value">-</span>
+                                <span className="stat-value">
+                                    {playerCount !== null ? playerCount.toLocaleString() : '-'}
+                                </span>
                             </div>
                             {game?.rating && (
                                 <div className="stat-item">

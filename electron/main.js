@@ -1,3 +1,4 @@
+import 'dotenv/config';
 import { app, BrowserWindow, ipcMain, shell } from 'electron';
 import path from 'path';
 import { fileURLToPath } from 'url';
@@ -8,6 +9,8 @@ import { steamLocalService } from './steamLocalService.js';
 import { launchersService } from './launchersService.js';
 import { torrentService } from './torrentService.js';
 import { repackSearchService } from './repackSearchService.js';
+import { epicService } from './epicService.js';
+import { epicAuthService } from './epicAuthService.js';
 
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
@@ -36,7 +39,11 @@ const store = new Store({
       launchAtStartup: false
     },
     achievements: [],
-    tags: ['Favoritos', 'Por jugar', 'Completados', 'Multijugador']
+    tags: ['Favoritos', 'Por jugar', 'Completados', 'Multijugador'],
+    epicKeys: {
+      clientId: null,
+      clientSecret: null
+    }
   }
 });
 
@@ -209,6 +216,32 @@ ipcMain.handle('steam-get-achievements', async (_, { steamId, appId }) => {
   return await steamService.getPlayerAchievements(steamId, appId);
 });
 
+ipcMain.handle('steam-get-player-count', async (_, appId) => {
+  return await steamService.getCurrentPlayerCount(appId);
+});
+
+// Steam OpenID Authentication
+ipcMain.handle('steam-openid-login', async () => {
+  const { steamAuthService } = await import('./steamAuthService.js');
+  return await steamAuthService.startSteamAuth();
+});
+
+// Steam Level
+ipcMain.handle('steam-get-level', async (_, steamId) => {
+  return await steamService.getSteamLevel(steamId);
+});
+
+// Steam Badges
+ipcMain.handle('steam-get-badges', async (_, steamId) => {
+  return await steamService.getSteamBadges(steamId);
+});
+
+// Steam Friends
+ipcMain.handle('steam-get-friends', async (_, steamId) => {
+  return await steamService.getFriendsWithStatus(steamId);
+});
+
+
 // Steam Local Service Handlers
 ipcMain.handle('steam-get-local-info', async () => {
   return await steamLocalService.getSteamInfo();
@@ -269,6 +302,40 @@ ipcMain.handle('epic-launch-game', async (_, appName) => {
   } catch (error) {
     return { success: false, error: error.message };
   }
+});
+
+// New Epic Web API Handlers
+ipcMain.handle('epic-set-api-keys', (_, { clientId, clientSecret }) => {
+  store.set('epicKeys', { clientId, clientSecret });
+  return { success: true };
+});
+
+ipcMain.handle('epic-get-api-keys', () => {
+  return store.get('epicKeys');
+});
+
+ipcMain.handle('epic-login', async () => {
+  const keys = store.get('epicKeys');
+  if (!keys || !keys.clientId || !keys.clientSecret) {
+    return { success: false, error: 'Credenciales de Epic no configuradas. Por favor, añádelas en Configuración.' };
+  }
+  return await epicAuthService.startEpicAuth(keys.clientId, keys.clientSecret);
+});
+
+ipcMain.handle('epic-get-player-summary', async (_, { accessToken, accountId }) => {
+  return await epicService.getPlayerSummary(accessToken, accountId);
+});
+
+ipcMain.handle('epic-get-owned-games', async (_, { accessToken, accountId }) => {
+  return await epicService.getOwnedGames(accessToken, accountId);
+});
+
+ipcMain.handle('epic-get-friends', async (_, { accessToken, accountId }) => {
+  return await epicService.getFriendsWithStatus(accessToken, accountId);
+});
+
+ipcMain.handle('epic-get-achievements', async (_, { accessToken, accountId, namespace, appId }) => {
+  return await epicService.getPlayerAchievements(accessToken, accountId, namespace, appId);
 });
 
 // GOG Galaxy
