@@ -6,19 +6,31 @@ yarn-debug.log*
 yarn-error.log*
 pnpm-debug.log*
 lerna-debug.log*
-
+# Editor# Dependencies
 node_modules
-dist
-dist-ssr
-*.local
+.pnp
+.pnp.js
 
-# Editor directories and files
-.vscode/*
-!.vscode/extensions.json
-.idea
+# Testing
+coverage
+
+# Production
+dist
+build
+
+# Misc
 .DS_Store
+.env
+.npmrc
+*.log
+
+# C# / .NET
+[Bb]in/
+[Oo]bj/
+.vs/
+*.user
 *.suo
-*.ntvs*
-*.njsproj
+*.userprefs
+njsproj
 *.sln
 *.sw?

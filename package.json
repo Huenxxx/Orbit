@@ -13,7 +13,8 @@
     "preview": "vite preview",
     "electron": "electron .",
     "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
-    "electron:build": "npm run build && electron-builder"
+    "electron:build": "npm run build && electron-builder",
+    "orbit": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && dotnet run --project Orbit.Core/Orbit.Core.csproj\""
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.12",

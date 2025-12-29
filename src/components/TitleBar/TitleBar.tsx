@@ -1,55 +1,28 @@
 import { useState, useEffect } from 'react';
 import { Minus, Square, X, Maximize2 } from 'lucide-react';
+import { ipc } from '../../services/ipc';
 import './TitleBar.css';
-
-// Check if we're in Electron
-const isElectron = typeof window !== 'undefined' && window.require;
 
 export function TitleBar() {
     const [isMaximized, setIsMaximized] = useState(false);
 
-    useEffect(() => {
-        if (isElectron) {
-            const { ipcRenderer } = window.require('electron');
-
-            // Listen for maximize/unmaximize events
-            const handleMaximize = () => setIsMaximized(true);
-            const handleUnmaximize = () => setIsMaximized(false);
-
-            window.addEventListener('maximize', handleMaximize);
-            window.addEventListener('unmaximize', handleUnmaximize);
-
-            return () => {
-                window.removeEventListener('maximize', handleMaximize);
-                window.removeEventListener('unmaximize', handleUnmaximize);
-            };
-        }
-    }, []);
-
-    const handleMinimize = () => {
-        if (isElectron) {
-            const { ipcRenderer } = window.require('electron');
-            ipcRenderer.send('minimize-window');
-        }
-    };
-
+    const handleMinimize = () => ipc.invoke('window-minimize');
     const handleMaximize = () => {
-        if (isElectron) {
-            const { ipcRenderer } = window.require('electron');
-            ipcRenderer.send('maximize-window');
-            setIsMaximized(!isMaximized);
-        }
+        ipc.invoke('window-maximize');
+        setIsMaximized(!isMaximized);
     };
+    const handleClose = () => ipc.invoke('window-close');
 
-    const handleClose = () => {
-        if (isElectron) {
-            const { ipcRenderer } = window.require('electron');
-            ipcRenderer.send('close-window');
+    // Manual drag handler for WebView2
+    const handleMouseDown = (e: React.MouseEvent) => {
+        // Only drag on left click and if not clicking a button
+        if (e.button === 0 && !(e.target as HTMLElement).closest('button')) {
+            ipc.invoke('window-drag');
         }
     };
 
     return (
-        <div className="titlebar">
+        <div className="titlebar" onMouseDown={handleMouseDown}>
             <div className="titlebar-drag">
                 <div className="titlebar-logo">
                     <div className="orbit-icon">

@@ -57,6 +57,8 @@ export function Settings() {
     } = useLinkedAccountsStore();
 
 
+
+    // Epic Keys State
     const [epicClientId, setEpicClientId] = useState('');
     const [epicClientSecret, setEpicClientSecret] = useState('');
     const [isSavingEpicKeys, setIsSavingEpicKeys] = useState(false);
@@ -65,10 +67,16 @@ export function Settings() {
     // Load Epic keys on mount
     useEffect(() => {
         const loadEpicKeys = async () => {
-            const keys = await (window as any).require('electron').ipcRenderer.invoke('epic-get-api-keys');
-            if (keys) {
-                setEpicClientId(keys.clientId || '');
-                setEpicClientSecret(keys.clientSecret || '');
+            try {
+                // Dynamic import to avoid breaking server-side rendering or build issues
+                const { ipc } = await import('../../services/ipc');
+                const keys = await ipc.invoke('epic-get-api-keys');
+                if (keys) {
+                    setEpicClientId(keys.clientId || '');
+                    setEpicClientSecret(keys.clientSecret || '');
+                }
+            } catch (err) {
+                console.error("Failed to load epic keys", err);
             }
         };
         loadEpicKeys();
@@ -78,7 +86,8 @@ export function Settings() {
         setIsSavingEpicKeys(true);
         setSaveSuccess(false);
         try {
-            await (window as any).require('electron').ipcRenderer.invoke('epic-set-api-keys', {
+            const { ipc } = await import('../../services/ipc');
+            await ipc.invoke('epic-set-api-keys', {
                 clientId: epicClientId,
                 clientSecret: epicClientSecret
             });
