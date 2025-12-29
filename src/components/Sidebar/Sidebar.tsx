@@ -13,7 +13,8 @@ import {
     Puzzle,
     Download,
     LogIn,
-    LogOut
+    LogOut,
+    Orbit
 } from 'lucide-react';
 import { useUIStore } from '../../stores';
 import { useAuthStore } from '../../stores/authStore';
@@ -49,6 +50,7 @@ export function Sidebar() {
     ], [activeDownloads]);
 
     const secondaryNavItems: NavItem[] = [
+        { id: 'astra', label: 'Astra', icon: <Orbit size={20} /> },
         { id: 'achievements', label: 'Logros', icon: <Trophy size={20} /> },
         { id: 'mods', label: 'Mods', icon: <Puzzle size={20} /> },
         { id: 'cloud', label: 'Nube', icon: <Cloud size={20} /> },

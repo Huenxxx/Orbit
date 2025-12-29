@@ -6,5 +6,4 @@ export { Catalog } from './Catalog/Catalog';
 export { Achievements } from './Achievements/Achievements';
 export { GameDetails } from './GameDetails/GameDetails';
 export { Downloads } from './Downloads/Downloads';
-
-
+export { Astra } from './Astra/Astra';

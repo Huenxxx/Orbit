@@ -8,7 +8,7 @@ namespace Orbit.Core.Services
     public class ConfigService
     {
         private string _configPath;
-        private Dictionary<string, object> _config;
+        private Dictionary<string, object> _config = new Dictionary<string, object>();
 
         public ConfigService()
         {
@@ -17,7 +17,7 @@ namespace Orbit.Core.Services
             
             // Ensure directory exists
             var dir = Path.GetDirectoryName(_configPath);
-            if (!Directory.Exists(dir))
+            if (dir != null && !Directory.Exists(dir))
             {
                 Directory.CreateDirectory(dir);
             }

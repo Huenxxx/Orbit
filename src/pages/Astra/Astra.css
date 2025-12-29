@@ -1,0 +1,895 @@
+/* ============================================
+   ORBIT ASTRA - Control Panel Page Styles
+   ============================================ */
+
+/* Astra Page Variables */
+.astra-page {
+    --astra-primary: #00d4ff;
+    --astra-secondary: #a855f7;
+    --astra-accent: #f59e0b;
+    --astra-success: #22c55e;
+    --astra-danger: #ef4444;
+    --astra-bg-dark: #0a0f1e;
+    --astra-bg-card: rgba(15, 25, 50, 0.7);
+    --astra-border: rgba(0, 212, 255, 0.15);
+    --astra-text: #ffffff;
+    --astra-text-muted: rgba(255, 255, 255, 0.6);
+
+    position: relative;
+    min-height: 100vh;
+    padding: 2rem;
+    background: var(--astra-bg-dark);
+    color: var(--astra-text);
+    overflow-x: hidden;
+}
+
+/* Background Effects */
+.astra-background {
+    position: fixed;
+    inset: 0;
+    pointer-events: none;
+    z-index: 0;
+    overflow: hidden;
+}
+
+.astra-stars {
+    position: absolute;
+    inset: 0;
+}
+
+.astra-star {
+    position: absolute;
+    width: 2px;
+    height: 2px;
+    background: white;
+    border-radius: 50%;
+    animation: twinkle 3s ease-in-out infinite;
+}
+
+@keyframes twinkle {
+
+    0%,
+    100% {
+        opacity: 0.3;
+    }
+
+    50% {
+        opacity: 1;
+    }
+}
+
+.astra-nebula {
+    position: absolute;
+    width: 150%;
+    height: 150%;
+    top: -25%;
+    left: -25%;
+    background: radial-gradient(ellipse at 30% 30%, rgba(0, 212, 255, 0.08) 0%, transparent 50%),
+        radial-gradient(ellipse at 70% 70%, rgba(168, 85, 247, 0.08) 0%, transparent 50%);
+    animation: nebula-float 20s ease-in-out infinite;
+}
+
+@keyframes nebula-float {
+
+    0%,
+    100% {
+        transform: translate(0, 0) rotate(0deg);
+    }
+
+    50% {
+        transform: translate(-2%, -2%) rotate(5deg);
+    }
+}
+
+/* Main Content */
+.astra-content {
+    position: relative;
+    z-index: 1;
+    max-width: 900px;
+    margin: 0 auto;
+}
+
+/* Header */
+.astra-header {
+    text-align: center;
+    margin-bottom: 3rem;
+}
+
+.logo-section {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 1.5rem;
+}
+
+.astra-logo-large {
+    width: 80px;
+    height: 80px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+}
+
+.logo-orbit-large {
+    position: relative;
+    width: 60px;
+    height: 60px;
+}
+
+.orbit-ring-large {
+    position: absolute;
+    inset: 0;
+    border: 2px solid var(--astra-primary);
+    border-radius: 50%;
+    animation: orbit-spin 10s linear infinite;
+    box-shadow: 0 0 20px rgba(0, 212, 255, 0.4);
+}
+
+.orbit-planet-large {
+    position: absolute;
+    width: 16px;
+    height: 16px;
+    background: linear-gradient(135deg, var(--astra-primary), var(--astra-secondary));
+    border-radius: 50%;
+    top: 50%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    box-shadow: 0 0 15px var(--astra-primary);
+}
+
+@keyframes orbit-spin {
+    from {
+        transform: rotate(0deg);
+    }
+
+    to {
+        transform: rotate(360deg);
+    }
+}
+
+.logo-text-section {
+    text-align: left;
+}
+
+.astra-title {
+    font-size: 2.5rem;
+    font-weight: 800;
+    letter-spacing: 0.1em;
+    background: linear-gradient(135deg, var(--astra-primary) 0%, var(--astra-secondary) 100%);
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+    margin: 0;
+}
+
+.astra-subtitle {
+    font-size: 0.95rem;
+    color: var(--astra-text-muted);
+    margin: 0.25rem 0 0;
+    letter-spacing: 0.05em;
+}
+
+/* Status Grid */
+.status-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fit, minmax(250px, 1fr));
+    gap: 1rem;
+    margin-bottom: 2rem;
+}
+
+.status-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+    padding: 1.25rem;
+    background: var(--astra-bg-card);
+    border: 1px solid var(--astra-border);
+    border-radius: 12px;
+    transition: all 0.3s ease;
+}
+
+.status-card.active {
+    border-color: rgba(34, 197, 94, 0.4);
+    background: rgba(34, 197, 94, 0.05);
+}
+
+.status-icon {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: 12px;
+    background: rgba(0, 212, 255, 0.1);
+    color: var(--astra-primary);
+}
+
+.status-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.25rem;
+}
+
+.status-label {
+    font-size: 0.75rem;
+    color: var(--astra-text-muted);
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.status-value {
+    font-size: 1rem;
+    font-weight: 600;
+}
+
+.status-value.running,
+.status-value.connected,
+.status-value.in-game {
+    color: var(--astra-success);
+}
+
+.status-value.stopped,
+.status-value.disconnected {
+    color: var(--astra-text-muted);
+}
+
+.status-indicator {
+    width: 12px;
+    height: 12px;
+    border-radius: 50%;
+    transition: all 0.3s ease;
+}
+
+.status-indicator.on {
+    background: var(--astra-success);
+    box-shadow: 0 0 10px var(--astra-success);
+}
+
+.status-indicator.off {
+    background: rgba(255, 255, 255, 0.2);
+}
+
+.status-indicator.pulse {
+    animation: pulse-glow 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+
+    0%,
+    100% {
+        box-shadow: 0 0 5px var(--astra-success);
+    }
+
+    50% {
+        box-shadow: 0 0 20px var(--astra-success), 0 0 30px var(--astra-success);
+    }
+}
+
+/* Control Panel */
+.control-panel {
+    background: var(--astra-bg-card);
+    border: 1px solid var(--astra-border);
+    border-radius: 16px;
+    padding: 2rem;
+    margin-bottom: 2rem;
+    text-align: center;
+}
+
+.panel-title {
+    font-size: 1.25rem;
+    font-weight: 600;
+    margin: 0 0 1.5rem;
+    color: var(--astra-text);
+}
+
+.control-buttons {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+}
+
+.control-btn {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 1rem 2rem;
+    font-size: 1rem;
+    font-weight: 600;
+    border: none;
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.3s ease;
+}
+
+.control-btn:disabled {
+    opacity: 0.6;
+    cursor: not-allowed;
+}
+
+.start-btn {
+    background: linear-gradient(135deg, var(--astra-success), #16a34a);
+    color: white;
+}
+
+.start-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(34, 197, 94, 0.4);
+}
+
+.stop-btn {
+    background: linear-gradient(135deg, var(--astra-danger), #dc2626);
+    color: white;
+}
+
+.stop-btn:hover:not(:disabled) {
+    transform: translateY(-2px);
+    box-shadow: 0 8px 30px rgba(239, 68, 68, 0.4);
+}
+
+.message-box {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+    padding: 0.75rem 1rem;
+    background: rgba(0, 212, 255, 0.1);
+    border: 1px solid rgba(0, 212, 255, 0.25);
+    border-radius: 8px;
+    color: var(--astra-primary);
+    font-size: 0.9rem;
+}
+
+/* Instructions Panel */
+.instructions-panel {
+    background: var(--astra-bg-card);
+    border: 1px solid var(--astra-border);
+    border-radius: 16px;
+    padding: 1.5rem 2rem;
+}
+
+.instructions-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1.1rem;
+    font-weight: 600;
+    margin: 0 0 1rem;
+    color: var(--astra-primary);
+}
+
+.instructions-list {
+    margin: 0;
+    padding-left: 1.5rem;
+    color: var(--astra-text-muted);
+}
+
+.instructions-list li {
+    margin-bottom: 0.75rem;
+    line-height: 1.5;
+}
+
+.instructions-list strong {
+    color: var(--astra-text);
+}
+
+.key-highlight {
+    display: inline-block;
+    padding: 0.15rem 0.6rem;
+    background: rgba(0, 212, 255, 0.2);
+    border: 1px solid var(--astra-primary);
+    border-radius: 6px;
+    font-family: monospace;
+    font-weight: 700;
+    color: var(--astra-primary);
+}
+
+.safety-badge {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.5rem;
+    margin-top: 1.5rem;
+    padding: 0.75rem;
+    background: rgba(34, 197, 94, 0.1);
+    border: 1px solid rgba(34, 197, 94, 0.3);
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: var(--astra-success);
+}
+
+.shield-icon {
+    font-size: 1.2rem;
+}
+
+/* Responsive */
+@media (max-width: 768px) {
+    .astra-page {
+        padding: 1rem;
+    }
+
+    .logo-section {
+        flex-direction: column;
+        text-align: center;
+    }
+
+    .logo-text-section {
+        text-align: center;
+    }
+
+    .astra-title {
+        font-size: 1.75rem;
+    }
+
+    .status-grid {
+        grid-template-columns: 1fr;
+    }
+
+    .control-btn {
+        padding: 0.875rem 1.5rem;
+        font-size: 0.9rem;
+    }
+}
+
+/* ===== BUILDS & RUNES SECTION ===== */
+.builds-runes-section {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    gap: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+@media (max-width: 900px) {
+    .builds-runes-section {
+        grid-template-columns: 1fr;
+    }
+}
+
+.builds-panel,
+.runes-panel {
+    background: var(--astra-bg-card);
+    border: 1px solid var(--astra-border);
+    border-radius: 16px;
+    padding: 1.5rem;
+}
+
+.section-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 1rem;
+    font-weight: 600;
+    color: var(--astra-primary);
+    margin: 0 0 1rem;
+}
+
+/* Items Grid */
+.items-grid {
+    display: grid;
+    grid-template-columns: repeat(2, 1fr);
+    gap: 0.75rem;
+}
+
+.item-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: rgba(0, 212, 255, 0.05);
+    border: 1px solid var(--astra-border);
+    border-radius: 10px;
+    transition: all 0.2s ease;
+}
+
+.item-card:hover {
+    background: rgba(0, 212, 255, 0.1);
+    border-color: var(--astra-primary);
+    transform: translateY(-2px);
+}
+
+.item-icon {
+    font-size: 1.5rem;
+    width: 40px;
+    height: 40px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: rgba(0, 0, 0, 0.3);
+    border-radius: 8px;
+}
+
+.item-info {
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.item-name {
+    font-size: 0.85rem;
+    font-weight: 600;
+    color: var(--astra-text);
+}
+
+.item-desc {
+    font-size: 0.7rem;
+    color: var(--astra-text-muted);
+}
+
+/* Runes Grid */
+.runes-grid {
+    display: flex;
+    flex-direction: column;
+    gap: 1rem;
+}
+
+.rune-card {
+    padding: 1rem;
+    background: rgba(0, 0, 0, 0.2);
+    border: 1px solid var(--astra-border);
+    border-left: 3px solid var(--rune-color, var(--astra-accent));
+    border-radius: 10px;
+}
+
+.rune-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.rune-icon {
+    font-size: 1.25rem;
+}
+
+.rune-name {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--rune-color, var(--astra-accent));
+    text-transform: uppercase;
+    letter-spacing: 0.05em;
+}
+
+.rune-keystone {
+    font-size: 1rem;
+    font-weight: 700;
+    color: var(--astra-text);
+    margin-bottom: 0.5rem;
+}
+
+.rune-minor-list {
+    display: flex;
+    flex-wrap: wrap;
+    gap: 0.5rem;
+}
+
+.rune-minor {
+    font-size: 0.75rem;
+    color: var(--astra-text-muted);
+    padding: 0.25rem 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    border-radius: 4px;
+}
+
+/* ===== ACCOUNT SECTION ===== */
+.account-section {
+    background: var(--astra-bg-card);
+    border: 1px solid var(--astra-border);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+}
+
+.account-card {
+    display: flex;
+    align-items: center;
+    gap: 1rem;
+}
+
+.profile-icon {
+    width: 64px;
+    height: 64px;
+    border-radius: 12px;
+    border: 2px solid var(--astra-primary);
+    box-shadow: 0 0 15px rgba(0, 212, 255, 0.3);
+}
+
+.account-info {
+    flex: 1;
+}
+
+.summoner-name {
+    font-size: 1.5rem;
+    font-weight: 700;
+    margin: 0;
+    background: linear-gradient(135deg, var(--astra-primary), var(--astra-secondary));
+    -webkit-background-clip: text;
+    -webkit-text-fill-color: transparent;
+    background-clip: text;
+}
+
+.summoner-level {
+    font-size: 0.85rem;
+    color: var(--astra-text-muted);
+}
+
+.rank-badge {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    padding: 0.5rem 1rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 2px solid;
+    border-radius: 8px;
+}
+
+.lp-text {
+    font-size: 0.75rem;
+    color: var(--astra-text-muted);
+    margin-left: 0.25rem;
+}
+
+.ranked-stats {
+    display: flex;
+    gap: 2rem;
+    margin-top: 1rem;
+    padding-top: 1rem;
+    border-top: 1px solid var(--astra-border);
+}
+
+.stat-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    color: var(--astra-text-muted);
+    font-size: 0.9rem;
+}
+
+.stat-item.winrate {
+    font-weight: 600;
+}
+
+/* ===== CHAMP SELECT SECTION ===== */
+.champ-select-section {
+    background: linear-gradient(135deg, rgba(0, 212, 255, 0.1), rgba(168, 85, 247, 0.1));
+    border: 2px solid var(--astra-primary);
+    border-radius: 16px;
+    padding: 1.5rem;
+    margin-bottom: 2rem;
+    animation: champ-select-pulse 2s ease-in-out infinite;
+}
+
+@keyframes champ-select-pulse {
+
+    0%,
+    100% {
+        box-shadow: 0 0 20px rgba(0, 212, 255, 0.2);
+    }
+
+    50% {
+        box-shadow: 0 0 40px rgba(0, 212, 255, 0.4);
+    }
+}
+
+.section-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    font-size: 1.25rem;
+    font-weight: 700;
+    margin: 0 0 1rem;
+    color: var(--astra-primary);
+}
+
+.position-badge {
+    padding: 0.25rem 0.75rem;
+    background: var(--astra-primary);
+    color: #000;
+    font-size: 0.75rem;
+    font-weight: 700;
+    border-radius: 6px;
+    margin-left: auto;
+}
+
+.subsection-title {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    font-size: 0.9rem;
+    color: var(--astra-text-muted);
+    margin: 0 0 1rem;
+}
+
+.champions-grid {
+    display: grid;
+    grid-template-columns: repeat(auto-fill, minmax(200px, 1fr));
+    gap: 1rem;
+}
+
+.champion-card {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.75rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px solid var(--astra-border);
+    border-radius: 12px;
+    cursor: pointer;
+    transition: all 0.2s ease;
+}
+
+.champion-card:hover {
+    background: rgba(0, 212, 255, 0.1);
+    border-color: var(--astra-primary);
+    transform: translateY(-2px);
+}
+
+.champion-icon {
+    width: 48px;
+    height: 48px;
+    border-radius: 8px;
+    border: 2px solid var(--astra-border);
+}
+
+.champion-info {
+    flex: 1;
+    display: flex;
+    flex-direction: column;
+    gap: 0.15rem;
+}
+
+.champion-name {
+    font-weight: 600;
+    font-size: 0.95rem;
+}
+
+.champion-winrate {
+    font-size: 0.8rem;
+    font-weight: 600;
+}
+
+.tier-badge {
+    width: 24px;
+    height: 24px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    font-size: 0.75rem;
+    font-weight: 700;
+    color: #000;
+    border-radius: 4px;
+}
+
+/* Status card highlight for champ select */
+.status-card.highlight {
+    border-color: var(--astra-primary);
+    background: rgba(0, 212, 255, 0.1);
+}
+
+.status-value.in-champ-select {
+    color: var(--astra-primary);
+    font-weight: 700;
+}
+
+/* Rune updates for winrate display */
+.rune-details {
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    margin-top: 0.5rem;
+}
+
+.rune-style {
+    font-size: 0.75rem;
+    color: var(--astra-text-muted);
+}
+
+.rune-winrate {
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: var(--astra-success);
+}
+
+/* Rune updates */
+.rune-card.interactive {
+    cursor: pointer;
+    transition: all 0.2s;
+}
+
+.rune-card.interactive:hover {
+    background: rgba(0, 212, 255, 0.15);
+    border-color: var(--astra-primary);
+    transform: translateY(-2px);
+}
+
+.rune-card.interactive:active {
+    transform: translateY(0);
+}
+
+.rune-header {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    margin-bottom: 0.5rem;
+}
+
+.import-btn {
+    margin-left: auto;
+    background: rgba(255, 255, 255, 0.1);
+    border: none;
+    color: var(--astra-primary);
+    width: 24px;
+    height: 24px;
+    border-radius: 4px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    cursor: pointer;
+}
+
+.import-btn:hover {
+    background: var(--astra-primary);
+    color: #000;
+}
+
+.rune-desc {
+    font-size: 0.75rem;
+    color: var(--astra-text-muted);
+    margin-bottom: 0.5rem;
+    font-style: italic;
+}
+
+.waiting-pick-message {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    gap: 0.75rem;
+    padding: 2rem;
+    background: rgba(0, 0, 0, 0.3);
+    border: 1px dashed var(--astra-border);
+    border-radius: 12px;
+    color: var(--astra-text-muted);
+    margin-bottom: 2rem;
+}
+
+/* Analysis mockup */
+.analysis-card {
+    background: rgba(16, 185, 129, 0.1);
+    border: 1px solid rgba(16, 185, 129, 0.3);
+    border-radius: 12px;
+    padding: 1rem;
+    color: #34d399;
+}
+
+.analysis-text {
+    font-size: 0.9rem;
+    margin: 0;
+}
+
+.item-winrate {
+    font-size: 0.75rem;
+    color: var(--astra-success);
+    font-weight: 600;
+}
+
+.config-row {
+    display: flex;
+    gap: 1rem;
+    margin-bottom: 1rem;
+    flex-wrap: wrap;
+}
+
+.config-item {
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    background: rgba(255, 255, 255, 0.05);
+    padding: 0.5rem 1rem;
+    border-radius: 8px;
+    font-size: 0.85rem;
+    color: var(--astra-text-muted);
+}
+
+.config-icon {
+    color: var(--astra-primary);
+}

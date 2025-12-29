@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
 import { TitleBar, Sidebar, AuthScreen, NotificationToast, EditGameModal } from './components';
-import { Dashboard, Library, Settings, Profile, Catalog, Achievements, GameDetails, Downloads } from './pages';
+import { Dashboard, Library, Settings, Profile, Catalog, Achievements, GameDetails, Downloads, Astra } from './pages';
 import { useUIStore, useSettingsStore, useGamesStore } from './stores';
 import { useAuthStore } from './stores/authStore';
 import { useLinkedAccountsStore } from './stores/linkedAccountsStore';
@@ -131,6 +131,8 @@ function App() {
         return wrapPage('cloud', <PlaceholderPage title="Guardado en la Nube" description="Sincroniza tu progreso entre todos tus dispositivos" />);
       case 'game-details':
         return wrapPage('game-details', <GameDetails />);
+      case 'astra':
+        return wrapPage('astra', <Astra />);
       default:
         return wrapPage('dashboard', <Dashboard />);
     }
