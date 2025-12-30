@@ -1,0 +1,11 @@
+  Determinando los proyectos que se van a restaurar...
+  Todos los proyectos están actualizados para la restauración.
+C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\Services\RepackSearchService.cs(11,29): error CS0246: El nombre del tipo o del espacio de nombres 'HttpClient' no se encontró (¿falta una directiva using o una referencia de ensamblado?) [C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\Orbit.Core.csproj]
+
+ERROR al compilar.
+
+C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\Services\RepackSearchService.cs(11,29): error CS0246: El nombre del tipo o del espacio de nombres 'HttpClient' no se encontró (¿falta una directiva using o una referencia de ensamblado?) [C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\Orbit.Core.csproj]
+    0 Advertencia(s)
+    1 Errores
+
+Tiempo transcurrido 00:00:00.96

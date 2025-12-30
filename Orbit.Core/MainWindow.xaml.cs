@@ -33,6 +33,10 @@ public class IpcResponse
 public partial class MainWindow : Window
 {
     private ConfigService _configService;
+    private SteamService _steamService;
+    private LaunchersService _launchersService;
+    private TorrentService _torrentService;
+    private RepackSearchService _repackSearchService;
     private AstraOverlay? _astraOverlay;
     private Forms.NotifyIcon? _notifyIcon;
     private bool _isClosingToTray = true;
@@ -41,6 +45,10 @@ public partial class MainWindow : Window
     {
         InitializeComponent();
         _configService = new ConfigService();
+        _steamService = new SteamService();
+        _launchersService = new LaunchersService();
+        _torrentService = new TorrentService();
+        _repackSearchService = new RepackSearchService();
         SetupSystemTray();
         InitializeAsync();
     }
@@ -67,11 +75,12 @@ public partial class MainWindow : Window
 
     private Drawing.Icon CreateOrbitIcon()
     {
-        // Create a simple icon programmatically
-        var bitmap = new Drawing.Bitmap(32, 32);
+        // Create a simple icon programmatically with transparent background
+        var bitmap = new Drawing.Bitmap(32, 32, Drawing.Imaging.PixelFormat.Format32bppArgb);
         using (var g = Drawing.Graphics.FromImage(bitmap))
         {
-            g.Clear(Drawing.Color.FromArgb(10, 10, 15));
+            g.Clear(Drawing.Color.Transparent);
+            g.SmoothingMode = Drawing.Drawing2D.SmoothingMode.AntiAlias;
             
             // Outer ring
             using var pen = new Drawing.Pen(Drawing.Color.FromArgb(99, 102, 241), 2);
@@ -503,6 +512,319 @@ public partial class MainWindow : Window
                     result = new { success = itemsImported };
                     break;
 
+                // ==========================================
+                // GAMES STORAGE
+                // ==========================================
+                case "get-games":
+                    result = _configService.Get<List<object>>("games") ?? new List<object>();
+                    break;
+
+                case "save-games":
+                    if (request.payload is JsonElement gamesEl)
+                    {
+                        var games = JsonSerializer.Deserialize<List<object>>(gamesEl.GetRawText());
+                        _configService.Set("games", games);
+                        result = new { success = true };
+                    }
+                    break;
+
+                case "get-settings":
+                    result = _configService.Get<object>("settings") ?? new { };
+                    break;
+
+                case "save-settings":
+                    if (request.payload is JsonElement settingsEl)
+                    {
+                        var settings = JsonSerializer.Deserialize<object>(settingsEl.GetRawText());
+                        _configService.Set("settings", settings);
+                        result = new { success = true };
+                    }
+                    break;
+
+                case "get-achievements":
+                    result = _configService.Get<List<object>>("achievements") ?? new List<object>();
+                    break;
+
+                case "save-achievements":
+                    if (request.payload is JsonElement achievementsEl)
+                    {
+                        var achievements = JsonSerializer.Deserialize<List<object>>(achievementsEl.GetRawText());
+                        _configService.Set("achievements", achievements);
+                        result = new { success = true };
+                    }
+                    break;
+
+                case "get-tags":
+                    result = _configService.Get<List<string>>("tags") ?? new List<string> { "Favoritos", "Por jugar", "Completados", "Multijugador" };
+                    break;
+
+                case "save-tags":
+                    if (request.payload is JsonElement tagsEl)
+                    {
+                        var tags = JsonSerializer.Deserialize<List<string>>(tagsEl.GetRawText());
+                        _configService.Set("tags", tags);
+                        result = new { success = true };
+                    }
+                    break;
+
+                // ==========================================
+                // GAME LAUNCHING
+                // ==========================================
+                case "launch-game":
+                    if (request.payload is JsonElement execEl && execEl.ValueKind == JsonValueKind.String)
+                    {
+                        var execPath = execEl.GetString();
+                        if (!string.IsNullOrEmpty(execPath))
+                        {
+                            try
+                            {
+                                System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                                {
+                                    FileName = execPath,
+                                    UseShellExecute = true
+                                });
+                                result = new { success = true };
+                            }
+                            catch (Exception ex)
+                            {
+                                result = new { success = false, error = ex.Message };
+                            }
+                        }
+                    }
+                    break;
+
+                case "open-external":
+                    if (request.payload is JsonElement urlEl && urlEl.ValueKind == JsonValueKind.String)
+                    {
+                        var url = urlEl.GetString();
+                        if (!string.IsNullOrEmpty(url))
+                        {
+                            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                            {
+                                FileName = url,
+                                UseShellExecute = true
+                            });
+                            result = new { success = true };
+                        }
+                    }
+                    break;
+
+                case "show-item-in-folder":
+                    if (request.payload is JsonElement pathEl && pathEl.ValueKind == JsonValueKind.String)
+                    {
+                        var filePath = pathEl.GetString();
+                        if (!string.IsNullOrEmpty(filePath) && System.IO.File.Exists(filePath))
+                        {
+                            System.Diagnostics.Process.Start("explorer.exe", $"/select,\"{filePath}\"");
+                            result = new { success = true };
+                        }
+                        else if (!string.IsNullOrEmpty(filePath) && System.IO.Directory.Exists(filePath))
+                        {
+                            System.Diagnostics.Process.Start("explorer.exe", filePath);
+                            result = new { success = true };
+                        }
+                    }
+                    break;
+
+                // ==========================================
+                // STEAM SERVICE
+                // ==========================================
+                case "steam-get-owned-games":
+                    if (request.payload is JsonElement steamIdEl1 && steamIdEl1.ValueKind == JsonValueKind.String)
+                    {
+                        result = await _steamService.GetOwnedGames(steamIdEl1.GetString()!);
+                    }
+                    break;
+
+                case "steam-get-player-summary":
+                    if (request.payload is JsonElement steamIdEl2 && steamIdEl2.ValueKind == JsonValueKind.String)
+                    {
+                        result = await _steamService.GetPlayerSummary(steamIdEl2.GetString()!);
+                    }
+                    break;
+
+                case "steam-resolve-vanity-url":
+                    if (request.payload is JsonElement vanityEl && vanityEl.ValueKind == JsonValueKind.String)
+                    {
+                        result = await _steamService.ResolveVanityURL(vanityEl.GetString()!);
+                    }
+                    break;
+
+                case "steam-get-recently-played":
+                    if (request.payload is JsonElement steamIdEl3 && steamIdEl3.ValueKind == JsonValueKind.String)
+                    {
+                        result = await _steamService.GetRecentlyPlayedGames(steamIdEl3.GetString()!);
+                    }
+                    break;
+
+                case "steam-get-achievements":
+                    if (request.payload is JsonElement achPayload && achPayload.ValueKind == JsonValueKind.Object)
+                    {
+                        var achSteamId = achPayload.GetProperty("steamId").GetString()!;
+                        var appId = achPayload.GetProperty("appId").GetInt32();
+                        result = await _steamService.GetPlayerAchievements(achSteamId, appId);
+                    }
+                    break;
+
+                case "steam-get-level":
+                    if (request.payload is JsonElement steamIdEl4 && steamIdEl4.ValueKind == JsonValueKind.String)
+                    {
+                        result = await _steamService.GetSteamLevel(steamIdEl4.GetString()!);
+                    }
+                    break;
+
+                case "steam-get-badges":
+                    if (request.payload is JsonElement steamIdEl5 && steamIdEl5.ValueKind == JsonValueKind.String)
+                    {
+                        result = await _steamService.GetSteamBadges(steamIdEl5.GetString()!);
+                    }
+                    break;
+
+                case "steam-get-friends":
+                    if (request.payload is JsonElement steamIdEl6 && steamIdEl6.ValueKind == JsonValueKind.String)
+                    {
+                        result = await _steamService.GetFriendsWithStatus(steamIdEl6.GetString()!);
+                    }
+                    break;
+
+                case "steam-launch-game":
+                    if (request.payload is JsonElement appIdEl && appIdEl.ValueKind == JsonValueKind.Number)
+                    {
+                        var appId = appIdEl.GetInt32();
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = $"steam://rungameid/{appId}",
+                            UseShellExecute = true
+                        });
+                        result = new { success = true };
+                    }
+                    break;
+
+                case "steam-install-game":
+                    if (request.payload is JsonElement installAppIdEl && installAppIdEl.ValueKind == JsonValueKind.Number)
+                    {
+                        var appId = installAppIdEl.GetInt32();
+                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                        {
+                            FileName = $"steam://install/{appId}",
+                            UseShellExecute = true
+                        });
+                        result = new { success = true };
+                    }
+                    break;
+
+                // ==========================================
+                // LAUNCHERS SERVICE
+                // ==========================================
+                case "launchers-get-all":
+                    result = await _launchersService.GetAllLaunchersInfo();
+                    break;
+
+                case "epic-get-info":
+                    result = await _launchersService.GetEpicInfo();
+                    break;
+
+                case "epic-launch-game":
+                    if (request.payload is JsonElement epicAppEl && epicAppEl.ValueKind == JsonValueKind.String)
+                    {
+                        result = await _launchersService.LaunchEpicGame(epicAppEl.GetString()!);
+                    }
+                    break;
+
+                case "gog-get-info":
+                    result = await _launchersService.GetGogInfo();
+                    break;
+
+                case "gog-launch-game":
+                    if (request.payload is JsonElement gogIdEl && gogIdEl.ValueKind == JsonValueKind.String)
+                    {
+                        result = await _launchersService.LaunchGogGame(gogIdEl.GetString()!);
+                    }
+                    break;
+
+                case "ea-get-info":
+                    result = await _launchersService.GetEaInfo();
+                    break;
+
+                case "ea-launch-game":
+                    if (request.payload is JsonElement eaIdEl && eaIdEl.ValueKind == JsonValueKind.String)
+                    {
+                        result = await _launchersService.LaunchEaGame(eaIdEl.GetString()!);
+                    }
+                    break;
+
+                case "ubisoft-get-info":
+                    result = await _launchersService.GetUbisoftInfo();
+                    break;
+
+                case "ubisoft-launch-game":
+                    if (request.payload is JsonElement ubiIdEl && ubiIdEl.ValueKind == JsonValueKind.String)
+                    {
+                        result = await _launchersService.LaunchUbisoftGame(ubiIdEl.GetString()!);
+                    }
+                    break;
+
+                // ==========================================
+                // TORRENT SERVICE
+                // ==========================================
+                case "torrent-add":
+                    if (request.payload is JsonElement torrentPayload && torrentPayload.ValueKind == JsonValueKind.Object)
+                    {
+                        var id = torrentPayload.GetProperty("id").GetString()!;
+                        var magnetUri = torrentPayload.GetProperty("magnetUri").GetString()!;
+                        var name = torrentPayload.TryGetProperty("name", out var nameEl) ? nameEl.GetString() : null;
+                        result = await _torrentService.AddTorrent(id, magnetUri, name);
+                    }
+                    break;
+
+                case "torrent-pause":
+                    if (request.payload is JsonElement pauseIdEl && pauseIdEl.ValueKind == JsonValueKind.String)
+                    {
+                        result = await _torrentService.PauseTorrent(pauseIdEl.GetString()!);
+                    }
+                    break;
+
+                case "torrent-resume":
+                    if (request.payload is JsonElement resumeIdEl && resumeIdEl.ValueKind == JsonValueKind.String)
+                    {
+                        result = await _torrentService.ResumeTorrent(resumeIdEl.GetString()!);
+                    }
+                    break;
+
+                case "torrent-cancel":
+                    if (request.payload is JsonElement cancelIdEl && cancelIdEl.ValueKind == JsonValueKind.String)
+                    {
+                        result = await _torrentService.CancelTorrent(cancelIdEl.GetString()!);
+                    }
+                    break;
+
+                case "torrent-get-all":
+                    result = _torrentService.GetAllDownloads();
+                    break;
+
+                case "torrent-get-download-path":
+                    result = new { path = _torrentService.DownloadPath };
+                    break;
+
+                // ==========================================
+                // REPACK SEARCH SERVICE
+                // ==========================================
+                case "repacks-search":
+                    if (request.payload is JsonElement queryEl && queryEl.ValueKind == JsonValueKind.String)
+                    {
+                        result = await _repackSearchService.SearchRepacks(queryEl.GetString()!);
+                    }
+                    break;
+
+                case "repacks-get-magnet":
+                    if (request.payload is JsonElement magnetPayload && magnetPayload.ValueKind == JsonValueKind.Object)
+                    {
+                        var source = magnetPayload.GetProperty("source").GetString()!;
+                        var postUrl = magnetPayload.GetProperty("postUrl").GetString()!;
+                        result = await _repackSearchService.GetMagnetLink(source, postUrl);
+                    }
+                    break;
+
                 default:
                     System.Diagnostics.Debug.WriteLine($"Unknown Channel: {request.channel}");
                     break;
@@ -547,6 +869,7 @@ public partial class MainWindow : Window
         _notifyIcon?.Dispose();
         _astraOverlay?.StopService();
         _astraOverlay?.Close();
+        _torrentService?.Dispose();
         base.OnClosed(e);
     }
 }

@@ -113,12 +113,21 @@ const RUNE_PAGES = [
         styleName: 'Dominación + Brujería', desc: 'Daño explosivo rápido.', winRate: 51.8
     },
     {
+        id: 'phase_rush',
+        name: 'Irrupción de Fase (Mage/Speed)',
+        icon: '🏃',
+        primaryStyleId: 8200, subStyleId: 8300,
+        perkIds: [8230, 8224, 8210, 8237, 8345, 8304, 5008, 5008, 5002], // Phase Rush, Manaflow, Transcendence, Scorch
+        tags: ['battlemage', 'skirmisher'],
+        styleName: 'Brujería + Inspiración', desc: 'Movilidad y utilidad.', winRate: 53.1
+    },
+    {
         id: 'comet',
-        name: 'Cometa Arcano (Mage)',
+        name: 'Cometa Arcano (Poke)',
         icon: '☄️',
         primaryStyleId: 8200, subStyleId: 8300,
         perkIds: [8229, 8224, 8210, 8237, 8345, 8304, 5008, 5008, 5002],
-        tags: ['mage'],
+        tags: ['mage', 'artillery'],
         styleName: 'Brujería + Inspiración', desc: 'Pokeo y control de zona.', winRate: 50.4
     },
     {
@@ -131,76 +140,55 @@ const RUNE_PAGES = [
         styleName: 'Precisión + Dominación', desc: 'Daño sostenido y vulnerabilidad.', winRate: 51.2
     },
     {
+        id: 'grasp',
+        name: 'Garras del Inmortal (Tank)',
+        icon: '🟢',
+        primaryStyleId: 8400, subStyleId: 8300,
+        perkIds: [8437, 8401, 8429, 8451, 8345, 8347, 5002, 5002, 5001], // Grasp (ID check?) 8437 is Grasp.
+        tags: ['tank', 'warden'],
+        styleName: 'Valor + Inspiración', desc: 'Vida máxima y sustain.', winRate: 51.5
+    },
+    {
         id: 'guardian',
-        name: 'Guardián (Tank/Supp)',
+        name: 'Guardián (Support)',
         icon: '🛡️',
         primaryStyleId: 8400, subStyleId: 8300,
-        perkIds: [8437, 8401, 8429, 8451, 8345, 8347, 5002, 5002, 5001],
-        tags: ['tank', 'support'],
+        perkIds: [8465, 8401, 8429, 8451, 8345, 8347, 5002, 5002, 5001], // 8465 Sentinel/Guardian
+        tags: ['support', 'enchanter'],
         styleName: 'Valor + Inspiración', desc: 'Protección para aliados.', winRate: 50.9
     }
 ];
 
-// Champion Default Roles (Fallback when position is unknown)
+// Champion Default Roles (Fallback)
 const CHAMPION_DEFAULT_ROLES: Record<string, string> = {
-    "233": "jungle", "64": "jungle", "157": "middle", "222": "bottom", "86": "top", "103": "middle"
+    "233": "jungle", "64": "jungle", "157": "middle", "222": "bottom", "86": "top", "103": "middle",
+    "24": "top", "58": "top", "114": "top", // Jax, Renekton, Fiora
+    "203": "jungle", "9": "jungle", "234": "jungle", // Kindred, Fiddle, Viego
+    "134": "middle", "61": "middle", "136": "middle", "42": "middle", // Syndra, Orianna, Sol, Corki
+    "81": "bottom", "145": "bottom", "901": "bottom", // Ezreal, Kai'Sa, Smolder
+    "412": "utility", "63": "utility" // Thresh, Brand
 };
 
 // Rich Item Sets (S14 Class-Based + Specific Champs)
 const ITEM_SETS: Record<string, any> = {
-    // --- Clases Genéricas (S14) ---
-    fighter: {
-        title: "Orbit Fighter S14",
-        blocks: [
-            { type: "Starter", items: [{ id: "1055", count: 1 }, { id: "2003", count: 1 }] },
-            { type: "Core", items: [{ id: "6692", count: 1 }, { id: "6610", count: 1 }, { id: "3071", count: 1 }] } // Eclipse, Sundered Sky, Cleaver
-        ]
-    },
-    mage: {
-        title: "Orbit Mage S14",
-        blocks: [
-            { type: "Starter", items: [{ id: "1056", count: 1 }, { id: "2003", count: 2 }] },
-            { type: "Core", items: [{ id: "3028", count: 1 }, { id: "4645", count: 1 }, { id: "3157", count: 1 }] } // Luden's Companion, Shadowflame, Zhonya
-        ]
-    },
-    marksman: {
-        title: "Orbit ADC S14",
-        blocks: [
-            { type: "Starter", items: [{ id: "1055", count: 1 }, { id: "2003", count: 1 }] },
-            { type: "Core", items: [{ id: "6672", count: 1 }, { id: "3031", count: 1 }, { id: "3036", count: 1 }] } // Kraken, IE, LDR
-        ]
-    },
-    assassin: {
-        title: "Orbit Assassin S14",
-        blocks: [
-            { type: "Starter", items: [{ id: "1055", count: 1 }] },
-            { type: "Core", items: [{ id: "3142", count: 1 }, { id: "6690", count: 1 }, { id: "3814", count: 1 }] } // Youmuu, Profane Hydra, Edge of Night
-        ]
-    },
-    tank: {
-        title: "Orbit Tank S14",
-        blocks: [
-            { type: "Starter", items: [{ id: "1054", count: 1 }, { id: "2003", count: 1 }] },
-            { type: "Core", items: [{ id: "3084", count: 1 }, { id: "3068", count: 1 }, { id: "3075", count: 1 }] } // Heartsteel, Sunfire, Thornmail
-        ]
-    },
-    support: {
-        title: "Orbit Support S14",
-        blocks: [
-            { type: "Starter", items: [{ id: "3865", count: 1 }, { id: "2003", count: 2 }] }, // World Atlas
-            { type: "Core", items: [{ id: "6616", count: 1 }, { id: "3107", count: 1 }, { id: "3190", count: 1 }] } // Moonstone, Redemption, Locket
-        ]
-    },
+    // --- Clases Genéricas ---
+    fighter: { title: "Orbit Fighter S14", blocks: [{ type: "Starter", items: [{ id: "1055", count: 1 }] }, { type: "Core", items: [{ id: "6692", count: 1 }, { id: "6610", count: 1 }, { id: "3071", count: 1 }] }] },
+    mage: { title: "Orbit Mage S14", blocks: [{ type: "Starter", items: [{ id: "1056", count: 1 }] }, { type: "Core", items: [{ id: "3028", count: 1 }, { id: "4645", count: 1 }, { id: "3157", count: 1 }] }] },
+    marksman: { title: "Orbit ADC S14", blocks: [{ type: "Starter", items: [{ id: "1055", count: 1 }] }, { type: "Core", items: [{ id: "6672", count: 1 }, { id: "3031", count: 1 }, { id: "3036", count: 1 }] }] },
+    assassin: { title: "Orbit Assassin S14", blocks: [{ type: "Starter", items: [{ id: "1055", count: 1 }] }, { type: "Core", items: [{ id: "3142", count: 1 }, { id: "6690", count: 1 }, { id: "3814", count: 1 }] }] },
+    tank: { title: "Orbit Tank S14", blocks: [{ type: "Starter", items: [{ id: "1054", count: 1 }] }, { type: "Core", items: [{ id: "3084", count: 1 }, { id: "3068", count: 1 }, { id: "3075", count: 1 }] }] },
+    support: { title: "Orbit Support S14", blocks: [{ type: "Starter", items: [{ id: "3865", count: 1 }] }, { type: "Core", items: [{ id: "6616", count: 1 }, { id: "3107", count: 1 }, { id: "3190", count: 1 }] }] },
 
-    // --- Campeones Específicos (Overrides) ---
-    // Yasuo (157)
-    "157": {
-        title: "Yasuo Wind S14",
-        blocks: [
-            { type: "Starter", items: [{ id: "1055", count: 1 }] },
-            { type: "Core", items: [{ id: "6672", count: 1 }, { id: "3031", count: 1 }, { id: "3072", count: 1 }] } // Kraken, IE, Bloodthirster
-        ]
-    },
+    // --- Specific Champions ---
+    "24": { title: "Jax Grandmaster", blocks: [{ type: "Starter", items: [{ id: "1055", count: 1 }] }, { type: "Core", items: [{ id: "3078", count: 1 }, { id: "3074", count: 1 }, { id: "6610", count: 1 }] }] }, // Trinity, Hydra, Sundered
+    "58": { title: "Renekton Domination", blocks: [{ type: "Starter", items: [{ id: "1055", count: 1 }] }, { type: "Core", items: [{ id: "6692", count: 1 }, { id: "6610", count: 1 }, { id: "3071", count: 1 }] }] }, // Eclipse, Sundered, Cleaver
+    "57": { title: "Maokai Tree", blocks: [{ type: "Starter", items: [{ id: "1054", count: 1 }] }, { type: "Core", items: [{ id: "6667", count: 1 }, { id: "3068", count: 1 }, { id: "3065", count: 1 }] }] }, // Unending Despair, Sunfire, Visage
+    "157": { title: "Yasuo Wind", blocks: [{ type: "Starter", items: [{ id: "1055", count: 1 }] }, { type: "Core", items: [{ id: "6672", count: 1 }, { id: "3031", count: 1 }, { id: "3072", count: 1 }] }] },
+    "136": { title: "Asol Starforger", blocks: [{ type: "Starter", items: [{ id: "1056", count: 1 }] }, { type: "Core", items: [{ id: "3116", count: 1 }, { id: "4645", count: 1 }, { id: "3089", count: 1 }] }] }, // Rylai, Shadowflame/Liandry (Blackfire Torch 666?. using Rylai for now)
+    "81": { title: "Ezreal Skillshot", blocks: [{ type: "Starter", items: [{ id: "1055", count: 1 }] }, { type: "Core", items: [{ id: "3078", count: 1 }, { id: "3042", count: 1 }, { id: "3115", count: 1 }] }] }, // Trinity, Muramana, Shojin
+    "145": { title: "Kai'Sa Void", blocks: [{ type: "Starter", items: [{ id: "1055", count: 1 }] }, { type: "Core", items: [{ id: "3124", count: 1 }, { id: "3302", count: 1 }, { id: "3091", count: 1 }] }] }, // Rageblade, Terminus, Wits End
+    "412": { title: "Thresh Hook", blocks: [{ type: "Starter", items: [{ id: "3865", count: 1 }] }, { type: "Core", items: [{ id: "3190", count: 1 }, { id: "3109", count: 1 }, { id: "3107", count: 1 }] }] }, // Locket, Knight's Vow, Redemption
+
     // Briar (233)
     "233": {
         title: "Briar Frenzy (Meta S14)",
