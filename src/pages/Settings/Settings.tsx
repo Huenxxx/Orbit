@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { } from 'react';
 import { motion } from 'framer-motion';
 import {
     Settings as SettingsIcon,
@@ -32,6 +32,13 @@ const SteamIcon = () => (
     </svg>
 );
 
+// EA Games icon SVG component
+const EAIcon = () => (
+    <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
+        <path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2zm0 18c-4.41 0-8-3.59-8-8s3.59-8 8-8 8 3.59 8 8-3.59 8-8 8zm-1-13h2v6h-2zm0 8h2v2h-2z" />
+    </svg>
+);
+
 // Epic Games icon SVG component
 const EpicIcon = () => (
     <svg width="20" height="20" viewBox="0 0 24 24" fill="currentColor">
@@ -53,52 +60,18 @@ export function Settings() {
         epicGames,
         linkEpicAccount,
         unlinkEpicAccount,
+        eaAccount,
+        isLinkingEa,
+        eaLocalGames,
+        linkEaAccount,
+        unlinkEaAccount,
         error
     } = useLinkedAccountsStore();
 
 
 
-    // Epic Keys State
-    const [epicClientId, setEpicClientId] = useState('');
-    const [epicClientSecret, setEpicClientSecret] = useState('');
-    const [isSavingEpicKeys, setIsSavingEpicKeys] = useState(false);
-    const [saveSuccess, setSaveSuccess] = useState(false);
+    // Epic Keys State - Removed as we now use local detection
 
-    // Load Epic keys on mount
-    useEffect(() => {
-        const loadEpicKeys = async () => {
-            try {
-                // Dynamic import to avoid breaking server-side rendering or build issues
-                const { ipc } = await import('../../services/ipc');
-                const keys = await ipc.invoke('epic-get-api-keys');
-                if (keys) {
-                    setEpicClientId(keys.clientId || '');
-                    setEpicClientSecret(keys.clientSecret || '');
-                }
-            } catch (err) {
-                console.error("Failed to load epic keys", err);
-            }
-        };
-        loadEpicKeys();
-    }, []);
-
-    const handleSaveEpicKeys = async () => {
-        setIsSavingEpicKeys(true);
-        setSaveSuccess(false);
-        try {
-            const { ipc } = await import('../../services/ipc');
-            await ipc.invoke('epic-set-api-keys', {
-                clientId: epicClientId,
-                clientSecret: epicClientSecret
-            });
-            setSaveSuccess(true);
-            setTimeout(() => setSaveSuccess(false), 3000);
-        } catch (err) {
-            console.error('Error saving Epic keys:', err);
-        } finally {
-            setIsSavingEpicKeys(false);
-        }
-    };
 
     const settingsSections = [
         {
@@ -420,50 +393,62 @@ export function Settings() {
                                 )}
                             </div>
 
-                            {/* Advanced Epic Configuration */}
-                            <div className="epic-advanced-config">
-                                <div className="config-header">
-                                    <Shield size={14} />
-                                    <span>Configuración Avanzada (Full Link)</span>
+
+                        </div>
+
+                        {/* EA Games Account */}
+                        <div className="linked-account-card">
+                            <div className="account-main-row">
+                                <div className="account-platform">
+                                    <span className="ea-icon-container">
+                                        <EAIcon />
+                                    </span>
+                                    <span>EA Games</span>
                                 </div>
-                                <p className="config-help">
-                                    Desbloquea amigos y logros introduciendo tus propias credenciales de desarrollador de Epic Games.
-                                </p>
-                                <div className="config-fields">
-                                    <div className="config-field">
-                                        <label>Client ID</label>
-                                        <input
-                                            type="password"
-                                            value={epicClientId}
-                                            onChange={(e) => setEpicClientId(e.target.value)}
-                                            placeholder="Introduce tu Client ID"
-                                            autoComplete="off"
-                                        />
+
+                                {eaAccount ? (
+                                    <div className="account-info">
+                                        <div className="account-avatar">
+                                            <div className="ea-avatar-placeholder">
+                                                {eaAccount.username[0].toUpperCase()}
+                                            </div>
+                                        </div>
+                                        <div className="account-details">
+                                            <span className="account-username">{eaAccount.username}</span>
+                                            <span className="account-meta">
+                                                {eaLocalGames.length > 0 && <span className="ea-games"><Gamepad2 size={12} /> {eaLocalGames.length} juegos</span>}
+                                            </span>
+                                        </div>
+                                        <button
+                                            className="btn btn-ghost btn-sm unlink-btn"
+                                            onClick={unlinkEaAccount}
+                                        >
+                                            <Unlink size={14} />
+                                            Desvincular
+                                        </button>
                                     </div>
-                                    <div className="config-field">
-                                        <label>Client Secret</label>
-                                        <input
-                                            type="password"
-                                            value={epicClientSecret}
-                                            onChange={(e) => setEpicClientSecret(e.target.value)}
-                                            placeholder="Introduce tu Client Secret"
-                                            autoComplete="off"
-                                        />
+                                ) : (
+                                    <div className="account-not-linked">
+                                        <span>No vinculada</span>
+                                        <button
+                                            className="btn btn-ea"
+                                            onClick={linkEaAccount}
+                                            disabled={isLinkingEa}
+                                        >
+                                            {isLinkingEa ? (
+                                                <>
+                                                    <Loader2 size={16} className="spinner" />
+                                                    Conectando...
+                                                </>
+                                            ) : (
+                                                <>
+                                                    <EAIcon />
+                                                    Vincular EA Desktop
+                                                </>
+                                            )}
+                                        </button>
                                     </div>
-                                </div>
-                                <button
-                                    className={`btn btn-sm btn-save-keys ${saveSuccess ? 'btn-success' : 'btn-ghost'}`}
-                                    onClick={handleSaveEpicKeys}
-                                    disabled={isSavingEpicKeys}
-                                >
-                                    {isSavingEpicKeys ? (
-                                        <Loader2 size={14} className="spinner" />
-                                    ) : saveSuccess ? (
-                                        '✓ Credenciales Guardadas'
-                                    ) : (
-                                        'Guardar credenciales'
-                                    )}
-                                </button>
+                                )}
                             </div>
                         </div>
 

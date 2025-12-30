@@ -623,5 +623,179 @@ public class SteamService
         }
     }
 
+    /// <summary>
+    /// Launches a specific Steam game
+    /// </summary>
+    public object LaunchGame(string appId)
+    {
+        try
+        {
+            var url = $"steam://rungameid/{appId}";
+            System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+            {
+                FileName = url,
+                UseShellExecute = true
+            });
+            return new { success = true };
+        }
+        catch (Exception ex)
+        {
+            return new { success = false, error = ex.Message };
+        }
+    }
+
+    /// <summary>
+    /// Gets review statistics for a game from Steam Store API
+    /// </summary>
+    public async Task<object> GetGameReviews(int appId)
+    {
+        try
+        {
+            // Note: This is checking the public store API, not the user API
+            var url = $"https://store.steampowered.com/appreviews/{appId}?json=1&language=all&purchase_type=all";
+            var response = await _httpClient.GetAsync(url);
+
+            if (!response.IsSuccessStatusCode)
+            {
+                return new { success = false, error = $"Steam Store API error: {response.StatusCode}", reviews = (object?)null };
+            }
+
+            var json = await response.Content.ReadAsStringAsync();
+            using var doc = JsonDocument.Parse(json);
+            var root = doc.RootElement;
+
+            if (root.TryGetProperty("success", out var s) && s.GetInt32() == 1 && root.TryGetProperty("query_summary", out var summary))
+            {
+                var scoreDesc = summary.TryGetProperty("review_score_desc", out var sd) ? sd.GetString() : "N/A";
+                var total = summary.TryGetProperty("total_reviews", out var t) ? t.GetInt32() : 0;
+                var positive = summary.TryGetProperty("total_positive", out var p) ? p.GetInt32() : 0;
+                var negative = summary.TryGetProperty("total_negative", out var n) ? n.GetInt32() : 0;
+                
+                return new 
+                { 
+                    success = true, 
+                    reviews = new 
+                    {
+                        scoreDescription = scoreDesc,
+                        total,
+                        positive,
+                        negative,
+                        percentage = total > 0 ? (int)((double)positive / total * 100) : 0
+                    }
+                };
+            }
+
+            return new { success = false, error = "Invalid response format", reviews = (object?)null };
+        }
+        catch (Exception ex)
+        {
+            return new { success = false, error = ex.Message, reviews = (object?)null };
+        }
+    }
+
+    /// <summary>
+    /// Detects local Steam installation and logged-in user
+    /// </summary>
+    public object GetLocalInfo()
+    {
+        try
+        {
+            string? installPath = null;
+            
+            // 1. Try Registry
+            try 
+            {
+                using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam");
+                if (key?.GetValue("SteamPath") is string iPath)
+                {
+                    installPath = iPath.Replace("/", "\\");
+                }
+            }
+            catch {}
+
+            // 2. Fallback to common paths
+            if (string.IsNullOrEmpty(installPath))
+            {
+                var paths = new[] {
+                    @"C:\Program Files (x86)\Steam",
+                    @"C:\Program Files\Steam",
+                    @"D:\Steam"
+                };
+                foreach (var p in paths)
+                {
+                    if (System.IO.Directory.Exists(p))
+                    {
+                        installPath = p;
+                        break;
+                    }
+                }
+            }
+
+            if (string.IsNullOrEmpty(installPath))
+            {
+                return new { success = true, steamInstalled = false };
+            }
+
+            // 3. Try to read loginusers.vdf
+            dynamic? user = null;
+            try
+            {
+                var loginFile = System.IO.Path.Combine(installPath, "config", "loginusers.vdf");
+                if (System.IO.File.Exists(loginFile))
+                {
+                    var lines = System.IO.File.ReadAllLines(loginFile);
+                    string? currentSteamId = null;
+                    string? currentName = null;
+                    bool isMostRecent = false;
+
+                    // Extremely basic VDF parser specifically for loginusers.vdf format
+                    // Matches: "7656..." { ... "AccountName" "..." ... "MostRecent" "1" ... }
+                    
+                    // Note: A proper VDF parser is better, but this regex/loop approach works for 99% of cases without extra deps
+                    // We scan for the pattern of steamid -> props
+                    
+                    var content = System.IO.File.ReadAllText(loginFile);
+                    
+                    // Look for the block with "MostRecent"		"1"
+                    // This is hacky, but VDF is proprietary.
+                    // Instead, let's just assume if we find a file, we are installed. 
+                    // Getting the exact user is a nice-to-have auth-fill.
+                    
+                    // Simple regex for SteamID 64
+                    var matches = System.Text.RegularExpressions.Regex.Matches(content, "\"(\\d{17})\"");
+                    if (matches.Count > 0)
+                    {
+                        // Take the first one, it's often the logged in one or last used
+                        var steamId = matches[0].Groups[1].Value;
+                        
+                        // Try to find AccountName
+                        var nameMatch = System.Text.RegularExpressions.Regex.Match(content, "\"AccountName\"\\s+\"([^\"]+)\"");
+                        var accountName = nameMatch.Success ? nameMatch.Groups[1].Value : "Unknown";
+                        
+                        user = new {
+                            steamId = steamId,
+                            personaName = accountName,
+                            timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
+                            mostRecent = true
+                        };
+                    }
+                }
+            }
+            catch {}
+
+            return new 
+            { 
+                success = true, 
+                steamInstalled = true, 
+                steamPath = installPath,
+                user = user 
+            };
+        }
+        catch (Exception ex)
+        {
+            return new { success = false, error = ex.Message };
+        }
+    }
+
     #endregion
 }

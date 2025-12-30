@@ -1,7 +1,5 @@
 import { create } from 'zustand';
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const electronRequire = (typeof window !== 'undefined' && (window as any).require) as ((module: string) => any) | undefined;
+import { ipc } from '../services/ipc';
 
 // ============================================
 // TYPES
@@ -90,14 +88,9 @@ export const useLaunchersStore = create<LaunchersState>((set, get) => ({
         set({ isLoading: true, error: null });
 
         try {
-            const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
+            const result = await ipc.invoke<AllLaunchersInfo>('launchers-get-all');
 
-            if (!ipcRenderer) {
-                set({ isLoading: false, error: 'Solo disponible en la aplicación de escritorio' });
-                return;
-            }
-
-            const result = await ipcRenderer.invoke('launchers-get-all-info') as AllLaunchersInfo;
+            if (!result) throw new Error('Failed to get launchers info');
 
             // Combine all games
             const allGames: InstalledGame[] = [
@@ -138,21 +131,17 @@ export const useLaunchersStore = create<LaunchersState>((set, get) => ({
         set({ isLoadingEpic: true });
 
         try {
-            const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
-
-            if (!ipcRenderer) return;
-
-            const result = await ipcRenderer.invoke('epic-get-info') as LauncherInfo;
-
-            set((state) => ({
-                epicInfo: result,
-                allInstalledGames: [
-                    ...state.allInstalledGames.filter(g => g.platform !== 'epic'),
-                    ...result.games
-                ],
-                isLoadingEpic: false
-            }));
-
+            const result = await ipc.invoke<LauncherInfo>('epic-get-info');
+            if (result) {
+                set((state) => ({
+                    epicInfo: result,
+                    allInstalledGames: [
+                        ...state.allInstalledGames.filter(g => g.platform !== 'epic'),
+                        ...result.games
+                    ],
+                    isLoadingEpic: false
+                }));
+            }
         } catch (error) {
             console.error('Error detecting Epic:', error);
             set({ isLoadingEpic: false });
@@ -164,21 +153,17 @@ export const useLaunchersStore = create<LaunchersState>((set, get) => ({
         set({ isLoadingGog: true });
 
         try {
-            const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
-
-            if (!ipcRenderer) return;
-
-            const result = await ipcRenderer.invoke('gog-get-info') as LauncherInfo;
-
-            set((state) => ({
-                gogInfo: result,
-                allInstalledGames: [
-                    ...state.allInstalledGames.filter(g => g.platform !== 'gog'),
-                    ...result.games
-                ],
-                isLoadingGog: false
-            }));
-
+            const result = await ipc.invoke<LauncherInfo>('gog-get-info');
+            if (result) {
+                set((state) => ({
+                    gogInfo: result,
+                    allInstalledGames: [
+                        ...state.allInstalledGames.filter(g => g.platform !== 'gog'),
+                        ...result.games
+                    ],
+                    isLoadingGog: false
+                }));
+            }
         } catch (error) {
             console.error('Error detecting GOG:', error);
             set({ isLoadingGog: false });
@@ -190,21 +175,17 @@ export const useLaunchersStore = create<LaunchersState>((set, get) => ({
         set({ isLoadingEa: true });
 
         try {
-            const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
-
-            if (!ipcRenderer) return;
-
-            const result = await ipcRenderer.invoke('ea-get-info') as LauncherInfo;
-
-            set((state) => ({
-                eaInfo: result,
-                allInstalledGames: [
-                    ...state.allInstalledGames.filter(g => g.platform !== 'ea'),
-                    ...result.games
-                ],
-                isLoadingEa: false
-            }));
-
+            const result = await ipc.invoke<LauncherInfo>('ea-get-info');
+            if (result) {
+                set((state) => ({
+                    eaInfo: result,
+                    allInstalledGames: [
+                        ...state.allInstalledGames.filter(g => g.platform !== 'ea'),
+                        ...result.games
+                    ],
+                    isLoadingEa: false
+                }));
+            }
         } catch (error) {
             console.error('Error detecting EA:', error);
             set({ isLoadingEa: false });
@@ -216,21 +197,17 @@ export const useLaunchersStore = create<LaunchersState>((set, get) => ({
         set({ isLoadingUbisoft: true });
 
         try {
-            const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
-
-            if (!ipcRenderer) return;
-
-            const result = await ipcRenderer.invoke('ubisoft-get-info') as LauncherInfo;
-
-            set((state) => ({
-                ubisoftInfo: result,
-                allInstalledGames: [
-                    ...state.allInstalledGames.filter(g => g.platform !== 'ubisoft'),
-                    ...result.games
-                ],
-                isLoadingUbisoft: false
-            }));
-
+            const result = await ipc.invoke<LauncherInfo>('ubisoft-get-info');
+            if (result) {
+                set((state) => ({
+                    ubisoftInfo: result,
+                    allInstalledGames: [
+                        ...state.allInstalledGames.filter(g => g.platform !== 'ubisoft'),
+                        ...result.games
+                    ],
+                    isLoadingUbisoft: false
+                }));
+            }
         } catch (error) {
             console.error('Error detecting Ubisoft:', error);
             set({ isLoadingUbisoft: false });
@@ -240,14 +217,24 @@ export const useLaunchersStore = create<LaunchersState>((set, get) => ({
     // Launch a game from any platform
     launchGame: async (platform: Platform, gameId: string) => {
         try {
-            const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
+            // Use specific launch command per platform if needed, or generic
+            // Current implementation in C# handles generic 'launch-game' for executables, 
+            // but we likely want platform specific handlers if we have IDs.
+            // MainWindow has: epic-launch-game, gog-launch-game, etc.
 
-            if (!ipcRenderer) {
-                throw new Error('Solo disponible en la aplicación de escritorio');
+            let channel = '';
+            switch (platform) {
+                case 'epic': channel = 'epic-launch-game'; break;
+                case 'gog': channel = 'gog-launch-game'; break;
+                case 'ea': channel = 'ea-launch-game'; break;
+                case 'ubisoft': channel = 'ubisoft-launch-game'; break;
+                default:
+                    // Fallback to generic executable launch if we had a path, but here we just have ID
+                    return false;
             }
 
-            const result = await ipcRenderer.invoke('launcher-launch-game', { platform, gameId });
-            return result.success;
+            const result = await ipc.invoke<{ success: boolean; error?: string }>(channel, gameId);
+            return result?.success || false;
         } catch (error) {
             console.error('Error launching game:', error);
             return false;

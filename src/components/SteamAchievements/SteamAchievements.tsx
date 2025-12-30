@@ -2,10 +2,8 @@ import { useState, useEffect } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
 import { Trophy, ChevronRight, X, Lock, Unlock } from 'lucide-react';
 import { ModalPortal } from '../ModalPortal';
+import { ipc } from '../../services/ipc';
 import './SteamAchievements.css';
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const electronRequire = (typeof window !== 'undefined' && (window as any).require) as ((module: string) => any) | undefined;
 
 interface Achievement {
     apiname: string;
@@ -40,18 +38,12 @@ export function SteamAchievements({ steamAppId, steamId, gameName }: SteamAchiev
         setError(null);
 
         try {
-            const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
-            if (!ipcRenderer) {
-                setError('Solo disponible en la app de escritorio');
-                return;
-            }
-
-            const result = await ipcRenderer.invoke('steam-get-achievements', {
+            const result = await ipc.invoke<{ success: boolean; achievements: Achievement[] }>('steam-get-achievements', {
                 steamId,
                 appId: steamAppId
             });
 
-            if (result.success && result.achievements) {
+            if (result && result.success && result.achievements) {
                 // Sort: unlocked first, then by unlock time (newest first)
                 const sorted = [...result.achievements].sort((a, b) => {
                     if (a.achieved !== b.achieved) return b.achieved - a.achieved;

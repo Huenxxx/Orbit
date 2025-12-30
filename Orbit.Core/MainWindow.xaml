@@ -9,6 +9,7 @@
         WindowStyle="None"
         ResizeMode="CanResize"
         AllowsTransparency="True"
+        Icon="app.ico"
         Background="#000000">
     <Grid>
         <wv2:WebView2 Name="MainWebView" Source="http://localhost:5173"/>

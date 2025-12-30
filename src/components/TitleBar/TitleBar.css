@@ -6,7 +6,7 @@
     align-items: center;
     justify-content: space-between;
     padding: 0 var(--space-2);
-    -webkit-app-region: drag;
+    /* -webkit-app-region: drag;  <-- REMOVED: Blocks JS events in WebView2 */
     user-select: none;
     position: relative;
     z-index: var(--z-sticky);

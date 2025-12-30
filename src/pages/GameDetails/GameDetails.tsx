@@ -27,10 +27,10 @@ import { useDownloadsStore, type RepackSource } from '../../stores/downloadsStor
 import type { Game } from '../../types';
 import { SteamAchievements } from '../../components/SteamAchievements/SteamAchievements';
 import { SteamFriends } from '../../components/SteamFriends/SteamFriends';
+import { ipc } from '../../services/ipc';
 import './GameDetails.css';
 
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const electronRequire = (typeof window !== 'undefined' && (window as any).require) as ((module: string) => any) | undefined;
+
 
 interface GameDetailsData {
     game: Game | null;
@@ -66,6 +66,11 @@ export function GameDetails() {
 
     // Steam specific states
     const [playerCount, setPlayerCount] = useState<number | null>(null);
+    const [reviews, setReviews] = useState<{
+        scoreDescription: string;
+        percentage: number;
+        total: number;
+    } | null>(null);
 
     // Get game data based on what was passed
     const data = gameDetailsData as GameDetailsData | null;
@@ -79,27 +84,36 @@ export function GameDetails() {
         }
     }, [game, platformGame, navigateTo]);
 
-    // Fetch player count for Steam games
+    // Fetch player count and reviews for Steam games
     useEffect(() => {
-        const fetchPlayerCount = async () => {
+        const fetchSteamData = async () => {
             const steamAppId = platformGame?.platform === 'steam' ? platformGame.appId : undefined;
             if (!steamAppId) return;
 
             try {
-                const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
-                if (ipcRenderer) {
-                    const result = await ipcRenderer.invoke('steam-get-player-count', steamAppId);
-                    if (result.success) {
-                        setPlayerCount(result.playerCount);
-                    }
+                // Fetch Player Count
+                const countResult = await ipc.invoke<{ success: boolean; playerCount: number }>('steam-get-player-count', steamAppId);
+                if (countResult && countResult.success) {
+                    setPlayerCount(countResult.playerCount);
                 }
+
+                // Fetch Reviews
+                const reviewResult = await ipc.invoke<{
+                    success: boolean;
+                    reviews: { scoreDescription: string; percentage: number; total: number }
+                }>('steam-get-reviews', steamAppId);
+
+                if (reviewResult && reviewResult.success && reviewResult.reviews) {
+                    setReviews(reviewResult.reviews);
+                }
+
             } catch (error) {
-                console.error('Error fetching player count:', error);
+                console.error('Error fetching steam data:', error);
             }
         };
 
-        fetchPlayerCount();
-        const interval = setInterval(fetchPlayerCount, 60000); // Update every minute
+        fetchSteamData();
+        const interval = setInterval(fetchSteamData, 60000); // Update every minute
         return () => clearInterval(interval);
     }, [platformGame]);
 
@@ -184,13 +198,10 @@ export function GameDetails() {
             } else if (game) {
                 // Launch custom game
                 if (game.executablePath) {
-                    const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
-                    if (ipcRenderer) {
-                        await ipcRenderer.invoke('launch-game', game.executablePath);
-                        showGameStarted(game.title);
-                        // Update last played
-                        updateGame(game.id, { lastPlayed: new Date().toISOString() });
-                    }
+                    await ipc.invoke('launch-game', game.executablePath);
+                    showGameStarted(game.title);
+                    // Update last played
+                    updateGame(game.id, { lastPlayed: new Date().toISOString() });
                 } else {
                     showError('Error', 'No se ha configurado un ejecutable para este juego');
                 }
@@ -207,10 +218,7 @@ export function GameDetails() {
         if (!path) return;
 
         try {
-            const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
-            if (ipcRenderer) {
-                await ipcRenderer.invoke('open-game-directory', path);
-            }
+            await ipc.invoke('open-game-directory', path);
         } catch (error) {
             showError('Error', 'No se pudo abrir el directorio');
         }
@@ -219,10 +227,7 @@ export function GameDetails() {
     const handleOpenStore = async () => {
         if (platformGame?.platform === 'steam' && platformGame.appId) {
             try {
-                const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
-                if (ipcRenderer) {
-                    await ipcRenderer.invoke('steam-open-store', platformGame.appId);
-                }
+                await ipc.invoke('steam-open-store', platformGame.appId);
             } catch (error) {
                 showError('Error', 'No se pudo abrir la tienda');
             }
@@ -274,19 +279,16 @@ export function GameDetails() {
             if (!magnetUri && repack.postUrl && repack.source) {
                 showSuccess('Obteniendo enlace', 'Obteniendo enlace magnet...');
 
-                const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
-                if (ipcRenderer) {
-                    const result = await ipcRenderer.invoke('repacks-get-magnet', {
-                        source: repack.source,
-                        postUrl: repack.postUrl
-                    });
+                const result = await ipc.invoke<{ success: boolean; magnet?: string }>('repacks-get-magnet', {
+                    source: repack.source,
+                    postUrl: repack.postUrl
+                });
 
-                    if (result.success && result.magnet) {
-                        magnetUri = result.magnet;
-                    } else {
-                        showError('Error', 'No se pudo obtener el enlace magnet. Intenta con otro repack.');
-                        return;
-                    }
+                if (result && result.success && result.magnet) {
+                    magnetUri = result.magnet;
+                } else {
+                    showError('Error', 'No se pudo obtener el enlace magnet. Intenta con otro repack.');
+                    return;
                 }
             }
 
@@ -538,6 +540,18 @@ export function GameDetails() {
                                     <Star size={14} />
                                     <span className="stat-label">Calificación</span>
                                     <span className="stat-value">{game.rating.toFixed(1)}</span>
+                                </div>
+                            )}
+                            {reviews && (
+                                <div className="stat-item" style={{ gridColumn: 'span 2' }}>
+                                    <Star size={14} />
+                                    <span className="stat-label">Reseñas de Steam</span>
+                                    <span
+                                        className="stat-value"
+                                        style={{ fontSize: '0.85rem', color: reviews.percentage > 70 ? '#66c0f4' : '#ccc' }}
+                                    >
+                                        {reviews.scoreDescription} ({reviews.percentage}%)
+                                    </span>
                                 </div>
                             )}
                         </div>

@@ -1,9 +1,7 @@
 import { useEffect, useState } from 'react';
 import { Users, Loader2 } from 'lucide-react';
+import { ipc } from '../../services/ipc';
 import './SteamFriends.css';
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const electronRequire = (typeof window !== 'undefined' && (window as any).require) as ((module: string) => any) | undefined;
 
 interface SteamFriend {
     steamId: string;
@@ -33,12 +31,9 @@ export function SteamFriends({ appId, steamId }: SteamFriendsProps) {
             }
 
             try {
-                const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
-                if (!ipcRenderer) return;
+                const result = await ipc.invoke<{ success: boolean; friends: SteamFriend[] }>('steam-get-friends', steamId);
 
-                const result = await ipcRenderer.invoke('steam-get-friends', steamId);
-
-                if (result.success && result.friends) {
+                if (result && result.success && result.friends) {
                     // Filter friends who are playing THIS game
                     const playingThisGame = result.friends.filter((friend: SteamFriend) =>
                         friend.currentGame?.gameId === appId.toString()

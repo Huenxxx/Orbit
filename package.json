@@ -4,31 +4,24 @@
   "version": "1.0.0",
   "description": "ORBIT - El centro de gravedad de todos tus juegos",
   "author": "ORBIT Team",
-  "main": "electron/main.js",
+  "main": "index.html",
   "type": "module",
   "scripts": {
     "dev": "vite",
     "build": "tsc -b && vite build",
     "lint": "eslint .",
     "preview": "vite preview",
-    "electron": "electron .",
-    "electron:dev": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && electron .\"",
-    "electron:build": "npm run build && electron-builder",
-    "orbit": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && dotnet run --project Orbit.Core/Orbit.Core.csproj\""
+    "orbit": "concurrently \"npm run dev\" \"wait-on http://localhost:5173 && dotnet watch run --project Orbit.Core/Orbit.Core.csproj\""
   },
   "dependencies": {
     "@tanstack/react-query": "^5.90.12",
     "dotenv": "^17.2.3",
-    "electron-store": "^11.0.2",
     "firebase": "^12.7.0",
     "framer-motion": "^12.23.26",
     "lucide-react": "^0.562.0",
-    "nodemailer": "^7.0.12",
-    "openid": "^2.0.14",
     "react": "^19.2.0",
     "react-dom": "^19.2.0",
     "uuid": "^13.0.0",
-    "webtorrent": "^2.8.5",
     "zustand": "^5.0.9"
   },
   "devDependencies": {
@@ -39,8 +32,6 @@
     "@types/uuid": "^10.0.0",
     "@vitejs/plugin-react": "^5.1.1",
     "concurrently": "^9.2.1",
-    "electron": "^39.2.7",
-    "electron-builder": "^26.0.12",
     "eslint": "^9.39.1",
     "eslint-plugin-react-hooks": "^7.0.1",
     "eslint-plugin-react-refresh": "^0.4.24",
@@ -49,28 +40,5 @@
     "typescript-eslint": "^8.46.4",
     "vite": "^7.2.4",
     "wait-on": "^9.0.3"
-  },
-  "build": {
-    "appId": "com.orbit.launcher",
-    "productName": "ORBIT",
-    "directories": {
-      "output": "dist-electron"
-    },
-    "files": [
-      "dist/**/*",
-      "electron/**/*"
-    ],
-    "win": {
-      "target": "nsis",
-      "icon": "public/icon.ico"
-    },
-    "mac": {
-      "target": "dmg",
-      "icon": "public/icon.icns"
-    },
-    "linux": {
-      "target": "AppImage",
-      "icon": "public/icon.png"
-    }
   }
 }

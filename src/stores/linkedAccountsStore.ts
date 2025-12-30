@@ -1,7 +1,5 @@
 import { create } from 'zustand';
-
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-const electronRequire = (typeof window !== 'undefined' && (window as any).require) as ((module: string) => any) | undefined;
+import { ipc } from '../services/ipc';
 
 // Types for Steam API responses
 interface SteamApiResponse {
@@ -39,7 +37,7 @@ export interface EpicGame {
 }
 
 export interface LinkedAccount {
-    platform: 'steam' | 'epic';
+    platform: 'steam' | 'epic' | 'ea';
     userId: string;
     username: string;
     avatarUrl?: string;
@@ -65,8 +63,10 @@ export interface SteamFriend {
 interface LinkedAccountsState {
     steamAccount: LinkedAccount | null;
     epicAccount: LinkedAccount | null;
+    eaAccount: LinkedAccount | null;
     steamGames: SteamGame[];
     epicGames: EpicGame[];
+    eaLocalGames: any[];
     epicLocalGames: any[];
     installedSteamGames: InstalledSteamGame[];
     steamInstalled: boolean;
@@ -76,8 +76,10 @@ interface LinkedAccountsState {
     epicFriends: SteamFriend[];
     isLinkingSteam: boolean;
     isLinkingEpic: boolean;
+    isLinkingEa: boolean;
     isSyncingSteam: boolean;
     isSyncingEpic: boolean;
+    isSyncingEa: boolean;
     isSyncingEpicLocal: boolean;
     isLoadingFriends: boolean;
     error: string | null;
@@ -87,10 +89,13 @@ interface LinkedAccountsState {
     linkSteamAccountAuto: () => Promise<boolean>;
     linkSteamWithOpenID: () => Promise<boolean>;
     linkEpicAccount: () => Promise<boolean>;
+    linkEaAccount: () => Promise<boolean>;
     unlinkSteamAccount: () => void;
     unlinkEpicAccount: () => void;
+    unlinkEaAccount: () => void;
     syncSteamGames: () => Promise<void>;
     syncEpicGames: () => Promise<void>;
+    syncEaGames: () => Promise<void>;
     syncEpicLocalGames: () => Promise<void>;
     loadLinkedAccounts: () => void;
     detectLocalSteam: () => Promise<void>;
@@ -137,15 +142,19 @@ interface SteamLocalInfo {
 // Storage keys
 const STORAGE_KEY_STEAM = 'orbit-linked-steam';
 const STORAGE_KEY_EPIC = 'orbit-linked-epic';
+const STORAGE_KEY_EA = 'orbit-linked-ea';
 const STORAGE_KEY_STEAM_GAMES = 'orbit-steam-games';
 const STORAGE_KEY_EPIC_GAMES = 'orbit-epic-games';
-const STORAGE_KEY_EPIC_TOKENS = 'orbit-epic-tokens';
+const STORAGE_KEY_EA_GAMES = 'orbit-ea-games';
+
 
 export const useLinkedAccountsStore = create<LinkedAccountsState>((set, get) => ({
     steamAccount: null,
     epicAccount: null,
+    eaAccount: null,
     steamGames: [],
     epicGames: [],
+    eaLocalGames: [],
     epicLocalGames: [],
     installedSteamGames: [],
     steamInstalled: false,
@@ -155,8 +164,10 @@ export const useLinkedAccountsStore = create<LinkedAccountsState>((set, get) => 
     epicFriends: [],
     isLinkingSteam: false,
     isLinkingEpic: false,
+    isLinkingEa: false,
     isSyncingSteam: false,
     isSyncingEpic: false,
+    isSyncingEa: false,
     isSyncingEpicLocal: false,
     isLoadingFriends: false,
     error: null,
@@ -177,6 +188,13 @@ export const useLinkedAccountsStore = create<LinkedAccountsState>((set, get) => 
                 set({ epicAccount: epic });
             }
 
+            // Load EA account
+            const eaData = localStorage.getItem(STORAGE_KEY_EA);
+            if (eaData) {
+                const ea = JSON.parse(eaData);
+                set({ eaAccount: ea });
+            }
+
             // Load Steam games
             const steamGamesData = localStorage.getItem(STORAGE_KEY_STEAM_GAMES);
             if (steamGamesData) {
@@ -187,6 +205,12 @@ export const useLinkedAccountsStore = create<LinkedAccountsState>((set, get) => 
             const epicGamesData = localStorage.getItem(STORAGE_KEY_EPIC_GAMES);
             if (epicGamesData) {
                 set({ epicGames: JSON.parse(epicGamesData) });
+            }
+
+            // Load EA games
+            const eaGamesData = localStorage.getItem(STORAGE_KEY_EA_GAMES);
+            if (eaGamesData) {
+                set({ eaLocalGames: JSON.parse(eaGamesData) });
             }
 
             // Load Epic local games
@@ -202,13 +226,10 @@ export const useLinkedAccountsStore = create<LinkedAccountsState>((set, get) => 
     syncEpicLocalGames: async () => {
         set({ isSyncingEpicLocal: true });
         try {
-            const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
-            if (ipcRenderer) {
-                const result = await ipcRenderer.invoke('epic-get-info');
-                if (result.success && result.games) {
-                    set({ epicLocalGames: result.games });
-                    localStorage.setItem('orbit-epic-local-games', JSON.stringify(result.games));
-                }
+            const result = await ipc.invoke<{ success: boolean; games: any[] }>('epic-get-info');
+            if (result && result.success && result.games) {
+                set({ epicLocalGames: result.games });
+                localStorage.setItem('orbit-epic-local-games', JSON.stringify(result.games));
             }
         } catch (error) {
             console.error('Error syncing local Epic games:', error);
@@ -224,20 +245,15 @@ export const useLinkedAccountsStore = create<LinkedAccountsState>((set, get) => 
             // Validate Steam ID format (should be 17 digits)
             const cleanSteamId = steamId.trim();
 
-            // Check if we're in Electron environment
-            const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
-
             let username = `Steam User ${cleanSteamId.slice(-4)}`;
             let avatarUrl = 'https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg';
 
             // Try to fetch real profile from Steam API
-            if (ipcRenderer) {
-                const profileResult = await ipcRenderer.invoke('steam-get-player-summary', cleanSteamId) as SteamApiResponse;
+            const profileResult = await ipc.invoke<SteamApiResponse>('steam-get-player-summary', cleanSteamId);
 
-                if (profileResult.success && profileResult.profile) {
-                    username = profileResult.profile.personaName;
-                    avatarUrl = profileResult.profile.avatarFull || profileResult.profile.avatarMedium || avatarUrl;
-                }
+            if (profileResult && profileResult.success && profileResult.profile) {
+                username = profileResult.profile.personaName;
+                avatarUrl = profileResult.profile.avatarFull || profileResult.profile.avatarMedium || avatarUrl;
             }
 
             const account: LinkedAccount = {
@@ -266,55 +282,91 @@ export const useLinkedAccountsStore = create<LinkedAccountsState>((set, get) => 
         set({ isLinkingEpic: true, error: null });
 
         try {
-            const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
-            if (!ipcRenderer) {
-                throw new Error('Solo disponible en la aplicación de escritorio');
+            // Detect local Epic Games installation
+            const result = await ipc.invoke<{
+                success: boolean;
+                installed: boolean;
+                games: any[];
+                launcherPath?: string
+            }>('epic-get-info');
+
+            if (result && result.success && result.installed) {
+                // Create a local account representation
+                const account: LinkedAccount = {
+                    platform: 'epic',
+                    userId: 'local-epic',
+                    username: 'Epic Games (Local)',
+                    linkedAt: new Date().toISOString()
+                };
+
+                localStorage.setItem(STORAGE_KEY_EPIC, JSON.stringify(account));
+
+                // Map local games to EpicGame format
+                const epicGames: EpicGame[] = result.games.map((game: any) => ({
+                    id: game.id,
+                    title: game.name,
+                    namespace: 'epic', // We don't have namespace locally, use generic
+                    image: '' // We don't have images locally yet
+                }));
+
+                localStorage.setItem(STORAGE_KEY_EPIC_GAMES, JSON.stringify(epicGames));
+                localStorage.setItem('orbit-epic-local-games', JSON.stringify(result.games));
+
+                set({
+                    epicAccount: account,
+                    epicGames: epicGames,
+                    epicLocalGames: result.games,
+                    isLinkingEpic: false
+                });
+
+                return true;
+            } else {
+                throw new Error('No se detectó el launcher de Epic Games instalado.');
             }
-
-            // Start Epic Games OAuth2 flow
-            const authResult = await ipcRenderer.invoke('epic-login');
-
-            if (!authResult.success) {
-                throw new Error(authResult.error || 'Error en la autenticación de Epic Games');
-            }
-
-            // Save tokens for future use (refreshing, etc.)
-            localStorage.setItem(STORAGE_KEY_EPIC_TOKENS, JSON.stringify({
-                access_token: authResult.access_token,
-                refresh_token: authResult.refresh_token,
-                account_id: authResult.account_id,
-                expires_at: Date.now() + (authResult.expires_in * 1000)
-            }));
-
-            // Get profile summary
-            const profileResult = await ipcRenderer.invoke('epic-get-player-summary', {
-                accessToken: authResult.access_token,
-                accountId: authResult.account_id
-            });
-
-            const username = profileResult.success ? profileResult.profile.displayName : `Epic User ${authResult.account_id.slice(-4)}`;
-
-            const account: LinkedAccount = {
-                platform: 'epic',
-                userId: authResult.account_id,
-                username: username,
-                avatarUrl: undefined,
-                linkedAt: new Date().toISOString()
-            };
-
-            localStorage.setItem(STORAGE_KEY_EPIC, JSON.stringify(account));
-            set({ epicAccount: account, isLinkingEpic: false });
-
-            // Sync games after linking
-            await get().syncEpicGames();
-
-            // Load friends
-            await get().getEpicFriends();
-
-            return true;
         } catch (error) {
             console.error('Error linking Epic account:', error);
             set({ error: (error as Error).message, isLinkingEpic: false });
+            return false;
+        }
+    },
+
+    linkEaAccount: async () => {
+        set({ isLinkingEa: true, error: null });
+
+        try {
+            // Detect local EA installation
+            const result = await ipc.invoke<{
+                success: boolean;
+                installed: boolean;
+                games: any[];
+                launcherPath?: string
+            }>('ea-get-info');
+
+            if (result && result.success && result.installed) {
+                // Create a local account representation
+                const account: LinkedAccount = {
+                    platform: 'ea',
+                    userId: 'local-ea',
+                    username: 'EA Desktop (Local)',
+                    linkedAt: new Date().toISOString()
+                };
+
+                localStorage.setItem(STORAGE_KEY_EA, JSON.stringify(account));
+                localStorage.setItem(STORAGE_KEY_EA_GAMES, JSON.stringify(result.games));
+
+                set({
+                    eaAccount: account,
+                    eaLocalGames: result.games,
+                    isLinkingEa: false
+                });
+
+                return true;
+            } else {
+                throw new Error('No se detectó EA Desktop o Origin instalado.');
+            }
+        } catch (error) {
+            console.error('Error linking EA account:', error);
+            set({ error: (error as Error).message, isLinkingEa: false });
             return false;
         }
     },
@@ -331,6 +383,12 @@ export const useLinkedAccountsStore = create<LinkedAccountsState>((set, get) => 
         set({ epicAccount: null, epicGames: [] });
     },
 
+    unlinkEaAccount: () => {
+        localStorage.removeItem(STORAGE_KEY_EA);
+        localStorage.removeItem(STORAGE_KEY_EA_GAMES);
+        set({ eaAccount: null, eaLocalGames: [] });
+    },
+
     syncSteamGames: async () => {
         const { steamAccount } = get();
         if (!steamAccount) return;
@@ -338,18 +396,11 @@ export const useLinkedAccountsStore = create<LinkedAccountsState>((set, get) => 
         set({ isSyncingSteam: true, error: null });
 
         try {
-            // Check if we're in Electron environment
-            const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
-
-            if (!ipcRenderer) {
-                throw new Error('Esta función solo está disponible en la aplicación de escritorio');
-            }
-
             // Fetch real games from Steam API
-            const result = await ipcRenderer.invoke('steam-get-owned-games', steamAccount.userId) as SteamApiResponse;
+            const result = await ipc.invoke<SteamApiResponse>('steam-get-owned-games', steamAccount.userId);
 
-            if (!result.success || !result.games) {
-                throw new Error(result.error || 'Error al obtener juegos de Steam');
+            if (!result || !result.success || !result.games) {
+                throw new Error(result?.error || 'Error al obtener juegos de Steam');
             }
 
             const steamGames: SteamGame[] = result.games.map((game: any) => ({
@@ -393,66 +444,76 @@ export const useLinkedAccountsStore = create<LinkedAccountsState>((set, get) => 
         set({ isSyncingEpic: true, error: null });
 
         try {
-            const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
-            if (!ipcRenderer) {
-                throw new Error('Solo disponible en la aplicación de escritorio');
+            // Just refresh local info
+            const result = await ipc.invoke<{ success: boolean; games: any[] }>('epic-get-info');
+
+            if (result && result.success && result.games) {
+                const epicGames: EpicGame[] = result.games.map((game: any) => ({
+                    id: game.id,
+                    title: game.name,
+                    namespace: 'epic',
+                    image: '' // Fallback image or look up locally if possible
+                }));
+
+                localStorage.setItem(STORAGE_KEY_EPIC_GAMES, JSON.stringify(epicGames));
+                localStorage.setItem('orbit-epic-local-games', JSON.stringify(result.games));
+
+                set({
+                    epicGames: epicGames,
+                    epicLocalGames: result.games,
+                    isSyncingEpic: false,
+                    epicAccount: {
+                        ...epicAccount,
+                        lastSync: new Date().toISOString()
+                    }
+                });
+
+                // Update stored account with lastSync
+                const updatedAccount = { ...epicAccount, lastSync: new Date().toISOString() };
+                localStorage.setItem(STORAGE_KEY_EPIC, JSON.stringify(updatedAccount));
             }
-
-            // Get tokens from storage
-            const tokensData = localStorage.getItem(STORAGE_KEY_EPIC_TOKENS);
-            if (!tokensData) throw new Error('No se encontraron credenciales de Epic');
-            const tokens = JSON.parse(tokensData);
-
-            // Fetch games from Epic Web API
-            const result = await ipcRenderer.invoke('epic-get-owned-games', {
-                accessToken: tokens.access_token,
-                accountId: tokens.account_id
-            });
-
-            if (!result.success || !result.games) {
-                throw new Error(result.error || 'Error al obtener juegos de Epic Games');
-            }
-
-            const epicGames: EpicGame[] = result.games.map((game: any) => ({
-                id: game.id,
-                title: game.name,
-                namespace: game.namespace,
-                image: `https://cdn1.epicgames.com/item/${game.namespace}/${game.id}/wide` // Fallback image URL
-            }));
-
-            localStorage.setItem(STORAGE_KEY_EPIC_GAMES, JSON.stringify(epicGames));
-            set({
-                epicGames: epicGames,
-                isSyncingEpic: false,
-                epicAccount: {
-                    ...epicAccount,
-                    lastSync: new Date().toISOString()
-                }
-            });
-
-            // Update stored account with lastSync
-            const updatedAccount = { ...epicAccount, lastSync: new Date().toISOString() };
-            localStorage.setItem(STORAGE_KEY_EPIC, JSON.stringify(updatedAccount));
-
         } catch (error) {
             console.error('Error syncing Epic games:', error);
             set({ error: (error as Error).message, isSyncingEpic: false });
         }
     },
 
+    syncEaGames: async () => {
+        const { eaAccount } = get();
+        if (!eaAccount) return;
+
+        set({ isSyncingEa: true, error: null });
+
+        try {
+            const result = await ipc.invoke<{ success: boolean; games: any[] }>('ea-get-info');
+
+            if (result && result.success && result.games) {
+                localStorage.setItem(STORAGE_KEY_EA_GAMES, JSON.stringify(result.games));
+
+                set({
+                    eaLocalGames: result.games,
+                    isSyncingEa: false,
+                    eaAccount: {
+                        ...eaAccount,
+                        lastSync: new Date().toISOString()
+                    }
+                });
+
+                const updatedAccount = { ...eaAccount, lastSync: new Date().toISOString() };
+                localStorage.setItem(STORAGE_KEY_EA, JSON.stringify(updatedAccount));
+            }
+        } catch (error) {
+            console.error('Error syncing EA games:', error);
+            set({ error: (error as Error).message, isSyncingEa: false });
+        }
+    },
+
     // Detect local Steam installation and get user info
     detectLocalSteam: async () => {
         try {
-            const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
+            const result = await ipc.invoke<SteamLocalInfo>('steam-get-local-info');
 
-            if (!ipcRenderer) {
-                set({ steamInstalled: false, error: 'Solo disponible en la aplicación de escritorio' });
-                return;
-            }
-
-            const result = await ipcRenderer.invoke('steam-get-local-info') as SteamLocalInfo;
-
-            if (result.success) {
+            if (result && result.success) {
                 set({
                     steamInstalled: result.steamInstalled,
                     steamPath: result.steamPath || null,
@@ -467,7 +528,7 @@ export const useLinkedAccountsStore = create<LinkedAccountsState>((set, get) => 
             } else {
                 set({
                     steamInstalled: false,
-                    error: result.error || 'No se pudo detectar Steam'
+                    error: result?.error || 'No se pudo detectar Steam'
                 });
             }
         } catch (error) {
@@ -481,18 +542,12 @@ export const useLinkedAccountsStore = create<LinkedAccountsState>((set, get) => 
         set({ isLinkingSteam: true, error: null });
 
         try {
-            const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
-
-            if (!ipcRenderer) {
-                throw new Error('Solo disponible en la aplicación de escritorio');
-            }
-
             // Get local Steam info
-            const localInfo = await ipcRenderer.invoke('steam-get-local-info') as SteamLocalInfo;
+            const localInfo = await ipc.invoke<SteamLocalInfo>('steam-get-local-info');
 
-            if (!localInfo.success || !localInfo.user) {
+            if (!localInfo || !localInfo.success || !localInfo.user) {
                 // Open Steam so user can log in
-                await ipcRenderer.invoke('steam-open-login');
+                await ipc.invoke('steam-open-login');
                 throw new Error('Por favor, inicia sesión en Steam y vuelve a intentarlo');
             }
 
@@ -501,9 +556,9 @@ export const useLinkedAccountsStore = create<LinkedAccountsState>((set, get) => 
             let avatarUrl = 'https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg';
 
             // Try to get full profile from Steam API for better avatar
-            const profileResult = await ipcRenderer.invoke('steam-get-player-summary', steamId) as SteamApiResponse;
+            const profileResult = await ipc.invoke<SteamApiResponse>('steam-get-player-summary', steamId);
 
-            if (profileResult.success && profileResult.profile) {
+            if (profileResult && profileResult.success && profileResult.profile) {
                 username = profileResult.profile.personaName;
                 avatarUrl = profileResult.profile.avatarFull || profileResult.profile.avatarMedium || avatarUrl;
             }
@@ -537,14 +592,8 @@ export const useLinkedAccountsStore = create<LinkedAccountsState>((set, get) => 
     // Launch a Steam game
     launchSteamGame: async (appId: number) => {
         try {
-            const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
-
-            if (!ipcRenderer) {
-                throw new Error('Solo disponible en la aplicación de escritorio');
-            }
-
-            const result = await ipcRenderer.invoke('steam-launch-game', appId);
-            return result.success;
+            const result = await ipc.invoke<{ success: boolean }>('steam-launch-game', appId);
+            return result?.success || false;
         } catch (error) {
             console.error('Error launching game:', error);
             return false;
@@ -554,14 +603,8 @@ export const useLinkedAccountsStore = create<LinkedAccountsState>((set, get) => 
     // Install a Steam game
     installSteamGame: async (appId: number) => {
         try {
-            const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
-
-            if (!ipcRenderer) {
-                throw new Error('Solo disponible en la aplicación de escritorio');
-            }
-
-            const result = await ipcRenderer.invoke('steam-install-game', appId);
-            return result.success;
+            const result = await ipc.invoke<{ success: boolean }>('steam-install-game', appId);
+            return result?.success || false;
         } catch (error) {
             console.error('Error installing game:', error);
             return false;
@@ -573,17 +616,11 @@ export const useLinkedAccountsStore = create<LinkedAccountsState>((set, get) => 
         set({ isLinkingSteam: true, error: null });
 
         try {
-            const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
-
-            if (!ipcRenderer) {
-                throw new Error('Solo disponible en la aplicación de escritorio');
-            }
-
             // Start OpenID authentication flow
-            const authResult = await ipcRenderer.invoke('steam-openid-login');
+            const authResult = await ipc.invoke<{ success: boolean; steamId?: string; error?: string }>('steam-openid-login');
 
-            if (!authResult.success || !authResult.steamId) {
-                throw new Error(authResult.error || 'Error en la autenticación de Steam');
+            if (!authResult || !authResult.success || !authResult.steamId) {
+                throw new Error(authResult?.error || 'Error en la autenticación de Steam');
             }
 
             const steamId = authResult.steamId;
@@ -592,16 +629,16 @@ export const useLinkedAccountsStore = create<LinkedAccountsState>((set, get) => 
             let username = `Steam User ${steamId.slice(-4)}`;
             let avatarUrl = 'https://avatars.steamstatic.com/fef49e7fa7e1997310d705b2a6158ff8dc1cdfeb_full.jpg';
 
-            const profileResult = await ipcRenderer.invoke('steam-get-player-summary', steamId);
+            const profileResult = await ipc.invoke<SteamApiResponse>('steam-get-player-summary', steamId);
 
-            if (profileResult.success && profileResult.profile) {
+            if (profileResult && profileResult.success && profileResult.profile) {
                 username = profileResult.profile.personaName;
                 avatarUrl = profileResult.profile.avatarFull || profileResult.profile.avatarMedium || avatarUrl;
             }
 
             // Get Steam level
-            const levelResult = await ipcRenderer.invoke('steam-get-level', steamId);
-            const steamLevel = levelResult.success ? levelResult.level : 0;
+            const levelResult = await ipc.invoke<{ success: boolean; level: number }>('steam-get-level', steamId);
+            const steamLevel = levelResult && levelResult.success ? levelResult.level : 0;
 
             const account: LinkedAccount = {
                 platform: 'steam',
@@ -639,13 +676,9 @@ export const useLinkedAccountsStore = create<LinkedAccountsState>((set, get) => 
         if (!steamAccount) return;
 
         try {
-            const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
+            const result = await ipc.invoke<{ success: boolean; level: number }>('steam-get-level', steamAccount.userId);
 
-            if (!ipcRenderer) return;
-
-            const result = await ipcRenderer.invoke('steam-get-level', steamAccount.userId);
-
-            if (result.success) {
+            if (result && result.success) {
                 set({ steamLevel: result.level });
             }
         } catch (error) {
@@ -661,16 +694,9 @@ export const useLinkedAccountsStore = create<LinkedAccountsState>((set, get) => 
         set({ isLoadingFriends: true });
 
         try {
-            const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
+            const result = await ipc.invoke<{ success: boolean; friends: any[] }>('steam-get-friends', steamAccount.userId);
 
-            if (!ipcRenderer) {
-                set({ isLoadingFriends: false });
-                return;
-            }
-
-            const result = await ipcRenderer.invoke('steam-get-friends', steamAccount.userId);
-
-            if (result.success && result.friends) {
+            if (result && result.success && result.friends) {
                 set({
                     steamFriends: result.friends as SteamFriend[],
                     isLoadingFriends: false
@@ -686,80 +712,12 @@ export const useLinkedAccountsStore = create<LinkedAccountsState>((set, get) => 
 
     // Get Epic friends with status
     getEpicFriends: async () => {
-        const { epicAccount } = get();
-        if (!epicAccount) return;
-
-        set({ isLoadingFriends: true });
-
-        try {
-            const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
-            if (!ipcRenderer) {
-                set({ isLoadingFriends: false });
-                return;
-            }
-
-            // Get tokens from storage
-            const tokensData = localStorage.getItem(STORAGE_KEY_EPIC_TOKENS);
-            if (!tokensData) return;
-            const tokens = JSON.parse(tokensData);
-
-            const result = await ipcRenderer.invoke('epic-get-friends', {
-                accessToken: tokens.access_token,
-                accountId: tokens.account_id
-            });
-
-            if (result.success && result.friends) {
-                const mappedFriends: SteamFriend[] = result.friends.map((f: any) => ({
-                    steamId: f.epicId, // Reusing field name for UI compatibility
-                    personaName: f.displayName,
-                    avatarFull: '',
-                    personaState: f.status === 'online' ? 1 : 0,
-                    personaStateString: f.status,
-                    currentGame: f.presence ? {
-                        gameId: f.presence.appId || '',
-                        gameName: f.presence.title || ''
-                    } : null,
-                    friendSince: 0
-                }));
-
-                set({
-                    epicFriends: mappedFriends,
-                    isLoadingFriends: false
-                });
-            } else {
-                set({ isLoadingFriends: false });
-            }
-        } catch (error) {
-            console.error('Error getting Epic friends:', error);
-            set({ isLoadingFriends: false });
-        }
+        // Local detection does not support friends fetching
+        set({ epicFriends: [], isLoadingFriends: false });
     },
 
-    getEpicAchievements: async (namespace: string, appId: string) => {
-        const { epicAccount } = get();
-        if (!epicAccount) return;
-
-        try {
-            const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
-            if (!ipcRenderer) return;
-
-            const tokensData = localStorage.getItem(STORAGE_KEY_EPIC_TOKENS);
-            if (!tokensData) return;
-            const tokens = JSON.parse(tokensData);
-
-            const result = await ipcRenderer.invoke('epic-get-achievements', {
-                accessToken: tokens.access_token,
-                accountId: tokens.account_id,
-                namespace,
-                appId
-            });
-
-            if (result.success) {
-                // Handle achievements data
-                console.log('Epic achievements:', result.achievements);
-            }
-        } catch (error) {
-            console.error('Error getting Epic achievements:', error);
-        }
+    getEpicAchievements: async (_namespace: string, _appId: string) => {
+        // Local detection does not support achievements fetching
+        console.log('Epic achievements not supported in local mode');
     }
-}));
+} as any));

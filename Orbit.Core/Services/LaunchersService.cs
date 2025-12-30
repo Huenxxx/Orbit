@@ -45,14 +45,14 @@ public class LaunchersService
         @"C:\Program Files\Epic Games\Launcher"
     };
 
-    public async Task<string?> FindEpicPath()
+    public Task<string?> FindEpicPath()
     {
         // Try registry
         try
         {
             using var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Epic Games\EpicGamesLauncher");
             if (key?.GetValue("AppDataPath") is string path)
-                return path;
+                return Task.FromResult<string?>(path);
         }
         catch { }
 
@@ -60,22 +60,49 @@ public class LaunchersService
         foreach (var epicPath in EPIC_LAUNCHER_PATHS)
         {
             if (Directory.Exists(epicPath))
-                return epicPath;
+                return Task.FromResult<string?>(epicPath);
         }
 
-        return null;
+        return Task.FromResult<string?>(null);
     }
 
     public async Task<List<InstalledGame>> GetEpicInstalledGames()
     {
         var games = new List<InstalledGame>();
-        var manifestPath = @"C:\ProgramData\Epic\EpicGamesLauncher\Data\Manifests";
+        string? manifestPath = null;
+
+        // Strategy 1: Registry
+        try
+        {
+            using var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Epic Games\EpicGamesLauncher");
+            if (key?.GetValue("AppDataPath") is string appDataPath && !string.IsNullOrEmpty(appDataPath))
+            {
+               var potentialPath = Path.Combine(appDataPath, "Manifests");
+               if (Directory.Exists(potentialPath))
+               {
+                   manifestPath = potentialPath;
+               }
+            }
+        }
+        catch { }
+
+        // Strategy 2: Common ProgramData Path (Fallback)
+        if (string.IsNullOrEmpty(manifestPath))
+        {
+             var commonPath = @"C:\ProgramData\Epic\EpicGamesLauncher\Data\Manifests";
+             if (Directory.Exists(commonPath))
+             {
+                 manifestPath = commonPath;
+             }
+        }
+
+        if (string.IsNullOrEmpty(manifestPath))
+        {
+             return games;
+        }
 
         try
         {
-            if (!Directory.Exists(manifestPath))
-                return games;
-
             var files = Directory.GetFiles(manifestPath, "*.item");
 
             foreach (var file in files)
@@ -88,13 +115,19 @@ public class LaunchersService
 
                     var displayName = root.TryGetProperty("DisplayName", out var dn) ? dn.GetString() : null;
                     var installLocation = root.TryGetProperty("InstallLocation", out var il) ? il.GetString() : null;
+                    var appName = root.TryGetProperty("AppName", out var an) ? an.GetString() : null;
 
                     if (!string.IsNullOrEmpty(displayName) && !string.IsNullOrEmpty(installLocation))
                     {
+                        var gameId = appName;
+                        if (string.IsNullOrEmpty(gameId))
+                        {
+                             gameId = root.TryGetProperty("CatalogItemId", out var cid) ? cid.GetString() : null;
+                        }
+
                         games.Add(new InstalledGame
                         {
-                            Id = root.TryGetProperty("AppName", out var an) ? an.GetString() 
-                                : root.TryGetProperty("CatalogItemId", out var cid) ? cid.GetString() : null,
+                            Id = gameId,
                             Name = displayName,
                             InstallPath = installLocation,
                             Executable = root.TryGetProperty("LaunchExecutable", out var le) ? le.GetString() : null,
@@ -104,7 +137,7 @@ public class LaunchersService
                         });
                     }
                 }
-                catch { /* Skip invalid manifest */ }
+                catch { }
             }
         }
         catch { }
@@ -112,7 +145,7 @@ public class LaunchersService
         return games;
     }
 
-    public async Task<object> LaunchEpicGame(string appName)
+    public Task<object> LaunchEpicGame(string appName)
     {
         try
         {
@@ -122,15 +155,15 @@ public class LaunchersService
                 FileName = launchUrl,
                 UseShellExecute = true
             });
-            return new { success = true };
+            return Task.FromResult<object>(new { success = true });
         }
         catch (Exception ex)
         {
-            return new { success = false, error = ex.Message };
+            return Task.FromResult<object>(new { success = false, error = ex.Message });
         }
     }
 
-    public async Task<object> OpenEpicStore(string appName)
+    public Task<object> OpenEpicStore(string appName)
     {
         try
         {
@@ -140,11 +173,11 @@ public class LaunchersService
                 FileName = storeUrl,
                 UseShellExecute = true
             });
-            return new { success = true };
+            return Task.FromResult<object>(new { success = true });
         }
         catch (Exception ex)
         {
-            return new { success = false, error = ex.Message };
+            return Task.FromResult<object>(new { success = false, error = ex.Message });
         }
     }
 
@@ -190,14 +223,14 @@ public class LaunchersService
         @"C:\Program Files\GOG Galaxy\Games"
     };
 
-    public async Task<string?> FindGogPath()
+    public Task<string?> FindGogPath()
     {
         // Try registry
         try
         {
             using var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\GOG.com\GalaxyClient\paths");
             if (key?.GetValue("client") is string path)
-                return path;
+                return Task.FromResult<string?>(path);
         }
         catch { }
 
@@ -205,10 +238,10 @@ public class LaunchersService
         foreach (var gogPath in GOG_PATHS)
         {
             if (File.Exists(Path.Combine(gogPath, "GalaxyClient.exe")))
-                return gogPath;
+                return Task.FromResult<string?>(gogPath);
         }
 
-        return null;
+        return Task.FromResult<string?>(null);
     }
 
     public async Task<List<InstalledGame>> GetGogInstalledGames()
@@ -295,7 +328,7 @@ public class LaunchersService
         return games;
     }
 
-    public async Task<object> LaunchGogGame(string gameId)
+    public Task<object> LaunchGogGame(string gameId)
     {
         try
         {
@@ -305,11 +338,11 @@ public class LaunchersService
                 FileName = launchUrl,
                 UseShellExecute = true
             });
-            return new { success = true };
+            return Task.FromResult<object>(new { success = true });
         }
         catch (Exception ex)
         {
-            return new { success = false, error = ex.Message };
+            return Task.FromResult<object>(new { success = false, error = ex.Message });
         }
     }
 
@@ -357,14 +390,14 @@ public class LaunchersService
         @"C:\Program Files (x86)\Electronic Arts"
     };
 
-    public async Task<(string? path, string? launcher)?> FindEaPath()
+    public Task<(string? path, string? launcher)?> FindEaPath()
     {
         // Try EA Desktop
         try
         {
             using var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\Electronic Arts\EA Desktop");
             if (key?.GetValue("InstallLocation") is string path)
-                return (path, "ea");
+                return Task.FromResult<(string?, string?)?>((path, "ea"));
         }
         catch { }
 
@@ -373,7 +406,7 @@ public class LaunchersService
         {
             using var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Origin");
             if (key?.GetValue("ClientPath") is string clientPath)
-                return (Path.GetDirectoryName(clientPath), "origin");
+                return Task.FromResult<(string?, string?)?>((Path.GetDirectoryName(clientPath), "origin"));
         }
         catch { }
 
@@ -381,15 +414,25 @@ public class LaunchersService
         foreach (var eaPath in EA_PATHS)
         {
             if (Directory.Exists(eaPath))
-                return (eaPath, "ea");
+                return Task.FromResult<(string?, string?)?>((eaPath, "ea"));
         }
 
-        return null;
+        return Task.FromResult<(string?, string?)?>(null);
     }
 
     public async Task<List<InstalledGame>> GetEaInstalledGames()
     {
         var games = new List<InstalledGame>();
+        var logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ea_debug.txt");
+        
+        void Log(string message) 
+        {
+            try { File.AppendAllText(logPath, message + Environment.NewLine); } catch {}
+            System.Diagnostics.Debug.WriteLine(message);
+        }
+
+        Log($"[{DateTime.Now}] Starting EA detection...");
+
         var contentPaths = new[] {
             @"C:\ProgramData\EA Desktop\LocalContent",
             @"C:\ProgramData\Origin\LocalContent"
@@ -397,41 +440,66 @@ public class LaunchersService
 
         foreach (var contentPath in contentPaths)
         {
-            if (!Directory.Exists(contentPath)) continue;
+            Log($"[EA] Checking content path: {contentPath}");
+            if (!Directory.Exists(contentPath)) 
+            {
+                Log($"[EA] Path does not exist: {contentPath}");
+                continue;
+            }
 
             try
             {
                 foreach (var dir in Directory.GetDirectories(contentPath))
                 {
+                    Log($"[EA] Found game dir in ProgramData: {dir}");
                     try
                     {
                         var installerPath = Path.Combine(dir, "__Installer");
-                        if (!Directory.Exists(installerPath)) continue;
+                        if (!Directory.Exists(installerPath))
+                        {
+                            Log($"[EA] __Installer folder not found in: {dir}");
+                            continue;
+                        }
 
                         var manifestFiles = Directory.GetFiles(installerPath, "*.mfst");
+                        Log($"[EA] Found {manifestFiles.Length} manifest files in {installerPath}");
+
                         if (manifestFiles.Length > 0)
                         {
                             var content = await File.ReadAllTextAsync(manifestFiles[0]);
                             var idMatch = Regex.Match(content, @"id=([^\r\n&]+)");
+                            var titleMatch = Regex.Match(content, @"title=([^\r\n&]+)"); // Try to find title in manifest
+                            
+                            var gameId = idMatch.Success ? idMatch.Groups[1].Value : Path.GetFileName(dir);
+                            var gameName = titleMatch.Success ? titleMatch.Groups[1].Value : Path.GetFileName(dir).Replace("_", " ");
+
+                            Log($"[EA] Parsed game - ID: {gameId}, Name: {gameName}");
 
                             games.Add(new InstalledGame
                             {
-                                Id = idMatch.Success ? idMatch.Groups[1].Value : Path.GetFileName(dir),
-                                Name = Path.GetFileName(dir).Replace("_", " "),
+                                Id = gameId,
+                                Name = gameName,
                                 InstallPath = dir,
                                 Platform = "ea"
                             });
                         }
                     }
-                    catch { }
+                    catch (Exception ex)
+                    {
+                         Log($"[EA] Error processing dir {dir}: {ex.Message}");
+                    }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Log($"[EA] Error scanning content path {contentPath}: {ex.Message}");
+            }
         }
 
-        // Check EA Games folders
+        // Check EA Games folders (Installation directories)
         foreach (var folder in EA_GAME_FOLDERS)
         {
+            Log($"[EA] Checking installation folder: {folder}");
             if (!Directory.Exists(folder)) continue;
 
             try
@@ -439,25 +507,101 @@ public class LaunchersService
                 foreach (var dir in Directory.GetDirectories(folder))
                 {
                     var dirName = Path.GetFileName(dir);
+                    Log($"[EA] Found potential game folder: {dirName} in {folder}");
+
+                    // Skip the launcher itself and other non-game folders
+                    if (dirName.Equals("EA Desktop", StringComparison.OrdinalIgnoreCase) || 
+                        dirName.Equals("Electronic Arts", StringComparison.OrdinalIgnoreCase) ||
+                        dirName.Equals("Origin", StringComparison.OrdinalIgnoreCase) ||
+                        dirName.Equals("EA Core", StringComparison.OrdinalIgnoreCase) ||
+                        dirName.StartsWith("DirectX", StringComparison.OrdinalIgnoreCase) ||
+                        dirName.StartsWith("__Installer", StringComparison.OrdinalIgnoreCase))
+                    {
+                         Log($"[EA] Skipping non-game directory: {dirName}");
+                         continue;
+                    }
+
                     if (!games.Any(g => g.Name == dirName))
                     {
-                        games.Add(new InstalledGame
+                        // Double check if it looks like a game (has an exe or __Installer)
+                        bool isLikelyGame = Directory.Exists(Path.Combine(dir, "__Installer")) || 
+                                           Directory.GetFiles(dir, "*.exe", SearchOption.TopDirectoryOnly).Any();
+
+                        if (isLikelyGame)
                         {
-                            Id = dirName.ToLower().Replace(" ", "-"),
-                            Name = dirName,
-                            InstallPath = dir,
-                            Platform = "ea"
-                        });
+                            Log($"[EA] Adding game from folder: {dirName}");
+                            games.Add(new InstalledGame
+                            {
+                                Id = dirName.ToLower().Replace(" ", "-"),
+                                Name = dirName,
+                                InstallPath = dir,
+                                Platform = "ea"
+                            });
+                        }
                     }
                 }
             }
-            catch { }
+            catch (Exception ex)
+            {
+                Log($"[EA] Error scanning folder {folder}: {ex.Message}");
+            }
         }
 
+        // Strategy 3: Registry Scan for EA Games
+        try
+        {
+            string[] registryPaths = {
+                @"SOFTWARE\Electronic Arts",
+                @"SOFTWARE\WOW6432Node\Electronic Arts"
+            };
+
+            foreach (var regPath in registryPaths)
+            {
+                using var eaKey = Registry.LocalMachine.OpenSubKey(regPath);
+                if (eaKey == null) continue;
+
+                foreach (var subKeyName in eaKey.GetSubKeyNames())
+                {
+                    // Skip EA Desktop itself and common non-game keys
+                    if (subKeyName.Equals("EA Desktop", StringComparison.OrdinalIgnoreCase) ||
+                        subKeyName.Equals("EA Core", StringComparison.OrdinalIgnoreCase))
+                        continue;
+
+                    using var gameKey = eaKey.OpenSubKey(subKeyName);
+                    if (gameKey == null) continue;
+
+                    var installDir = gameKey.GetValue("Install Location") as string ?? 
+                                    gameKey.GetValue("Install Dir") as string;
+
+                    if (!string.IsNullOrEmpty(installDir) && Directory.Exists(installDir))
+                    {
+                        var displayName = gameKey.GetValue("DisplayName") as string ?? subKeyName;
+                        
+                        if (!games.Any(g => g.InstallPath?.Equals(installDir, StringComparison.OrdinalIgnoreCase) == true))
+                        {
+                            Log($"[EA] Found game via Registry: {displayName} at {installDir}");
+                            games.Add(new InstalledGame
+                            {
+                                Id = subKeyName.ToLower().Replace(" ", "-"),
+                                Name = displayName,
+                                InstallPath = installDir,
+                                Platform = "ea"
+                            });
+                        }
+                    }
+                }
+            }
+        }
+        catch (Exception ex)
+        {
+            Log($"[EA] Error scanning registry: {ex.Message}");
+        }
+
+        Log($"[EA] Total games found: {games.Count}");
         return games;
     }
 
-    public async Task<object> LaunchEaGame(string gameId)
+    public Task<object> LaunchEaGame(string gameId)
     {
         try
         {
@@ -467,11 +611,11 @@ public class LaunchersService
                 FileName = launchUrl,
                 UseShellExecute = true
             });
-            return new { success = true };
+            return Task.FromResult<object>(new { success = true });
         }
         catch (Exception ex)
         {
-            return new { success = false, error = ex.Message };
+            return Task.FromResult<object>(new { success = false, error = ex.Message });
         }
     }
 
@@ -508,23 +652,23 @@ public class LaunchersService
         Path.Combine(Environment.GetFolderPath(Environment.SpecialFolder.LocalApplicationData), "Ubisoft Game Launcher")
     };
 
-    public async Task<string?> FindUbisoftPath()
+    public Task<string?> FindUbisoftPath()
     {
         try
         {
             using var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Ubisoft\Launcher");
             if (key?.GetValue("InstallDir") is string path)
-                return path;
+                return Task.FromResult<string?>(path);
         }
         catch { }
 
         foreach (var ubisoftPath in UBISOFT_PATHS)
         {
             if (Directory.Exists(ubisoftPath))
-                return ubisoftPath;
+                return Task.FromResult<string?>(ubisoftPath);
         }
 
-        return null;
+        return Task.FromResult<string?>(null);
     }
 
     public async Task<List<InstalledGame>> GetUbisoftInstalledGames()
@@ -561,7 +705,7 @@ public class LaunchersService
         return games;
     }
 
-    public async Task<object> LaunchUbisoftGame(string gameId)
+    public Task<object> LaunchUbisoftGame(string gameId)
     {
         try
         {
@@ -571,11 +715,11 @@ public class LaunchersService
                 FileName = launchUrl,
                 UseShellExecute = true
             });
-            return new { success = true };
+            return Task.FromResult<object>(new { success = true });
         }
         catch (Exception ex)
         {
-            return new { success = false, error = ex.Message };
+            return Task.FromResult<object>(new { success = false, error = ex.Message });
         }
     }
 
@@ -646,15 +790,15 @@ public class LaunchersService
         };
     }
 
-    public async Task<object> LaunchGame(string platform, string gameId)
+    public Task<object> LaunchGame(string platform, string gameId)
     {
         return platform.ToLower() switch
         {
-            "epic" => await LaunchEpicGame(gameId),
-            "gog" => await LaunchGogGame(gameId),
-            "ea" or "origin" => await LaunchEaGame(gameId),
-            "ubisoft" => await LaunchUbisoftGame(gameId),
-            _ => new { success = false, error = $"Unknown platform: {platform}" }
+            "epic" => LaunchEpicGame(gameId),
+            "gog" => LaunchGogGame(gameId),
+            "ea" or "origin" => LaunchEaGame(gameId),
+            "ubisoft" => LaunchUbisoftGame(gameId),
+            _ => Task.FromResult<object>(new { success = false, error = $"Unknown platform: {platform}" })
         };
     }
 

@@ -32,6 +32,16 @@ public class IpcResponse
 /// </summary>
 public partial class MainWindow : Window
 {
+    // P/Invoke for window dragging
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    public static extern IntPtr SendMessage(IntPtr hWnd, int wMsg, int wParam, int lParam);
+    
+    [System.Runtime.InteropServices.DllImport("user32.dll")]
+    public static extern bool ReleaseCapture();
+
+    private const int WM_NCLBUTTONDOWN = 0xA1;
+    private const int HT_CAPTION = 0x2;
+
     private ConfigService _configService;
     private SteamService _steamService;
     private LaunchersService _launchersService;
@@ -216,29 +226,55 @@ public partial class MainWindow : Window
             
             switch (request.channel)
             {
-                case "steam-login":
-                    var steamService = new SteamAuthService();
-                    var steamId = await steamService.StartSteamAuth();
-                    result = new { success = steamId != null, steamId = steamId };
+                // Launchers Service Handlers
+                case "launchers-get-all":
+                    result = await _launchersService.GetAllLaunchersInfo();
                     break;
 
-                case "epic-set-api-keys":
-                    if (request.payload is JsonElement p)
+                case "epic-get-info":
+                    result = await _launchersService.GetEpicInfo();
+                    break;
+
+                case "epic-launch-game":
+                    if (request.payload is JsonElement epicAppEl && epicAppEl.ValueKind == JsonValueKind.String)
                     {
-                        var keys = JsonSerializer.Deserialize<Dictionary<string, string>>(p.GetRawText());
-                        _configService.Set("epicKeys", keys);
-                        result = new { success = true };
-                    }
-                    else 
-                    {
-                        result = new { success = false, error = "Invalid payload format" };
+                        result = await _launchersService.LaunchEpicGame(epicAppEl.GetString()!);
                     }
                     break;
-                    
-                case "epic-get-api-keys":
-                    var storedKeys = _configService.Get<Dictionary<string, string>>("epicKeys");
-                    result = storedKeys ?? new Dictionary<string, string>();
+
+                case "gog-get-info":
+                    result = await _launchersService.GetGogInfo();
                     break;
+
+                case "gog-launch-game":
+                    if (request.payload is JsonElement gogIdEl && gogIdEl.ValueKind == JsonValueKind.String)
+                    {
+                        result = await _launchersService.LaunchGogGame(gogIdEl.GetString()!);
+                    }
+                    break;
+
+                case "ea-get-info":
+                    result = await _launchersService.GetEaInfo();
+                    break;
+
+                case "ea-launch-game":
+                    if (request.payload is JsonElement eaIdEl && eaIdEl.ValueKind == JsonValueKind.String)
+                    {
+                        result = await _launchersService.LaunchEaGame(eaIdEl.GetString()!);
+                    }
+                    break;
+
+                case "ubisoft-get-info":
+                    result = await _launchersService.GetUbisoftInfo();
+                    break;
+
+                case "ubisoft-launch-game":
+                    if (request.payload is JsonElement ubiIdEl && ubiIdEl.ValueKind == JsonValueKind.String)
+                    {
+                        result = await _launchersService.LaunchUbisoftGame(ubiIdEl.GetString()!);
+                    }
+                    break;
+
 
                 // Window Controls
                 case "window-minimize":
@@ -269,7 +305,10 @@ public partial class MainWindow : Window
                     break;
                 case "window-drag":
                     this.Dispatcher.Invoke(() => {
-                        try { this.DragMove(); } catch { /* Ignore if not primary button */ }
+                        try {
+                            ReleaseCapture();
+                            SendMessage(new WindowInteropHelper(this).Handle, WM_NCLBUTTONDOWN, HT_CAPTION, 0);
+                        } catch { }
                     });
                     result = new { success = true };
                     break;
@@ -326,14 +365,13 @@ public partial class MainWindow : Window
                 // Get current summoner account info
                 case "astra-get-summoner":
                     Services.SummonerInfo? summoner = null;
-                    this.Dispatcher.Invoke(async () => {
+                    await this.Dispatcher.InvokeAsync(async () => {
                         if (_astraOverlay?.LeagueService != null)
                         {
                             summoner = await _astraOverlay.LeagueService.GetCurrentSummoner();
                         }
                     });
-                    // Wait a bit for async to complete
-                    await Task.Delay(100);
+                    
                     if (summoner != null)
                     {
                         result = new {
@@ -354,13 +392,13 @@ public partial class MainWindow : Window
                 // Get ranked stats
                 case "astra-get-ranked":
                     Services.RankedStats? ranked = null;
-                    this.Dispatcher.Invoke(async () => {
+                    await this.Dispatcher.InvokeAsync(async () => {
                         if (_astraOverlay?.LeagueService != null)
                         {
                             ranked = await _astraOverlay.LeagueService.GetRankedStats();
                         }
                     });
-                    await Task.Delay(100);
+                    
                     if (ranked != null)
                     {
                         result = new {
@@ -383,13 +421,13 @@ public partial class MainWindow : Window
                 // Get champ select session
                 case "astra-get-champ-select":
                     Services.ChampSelectSession? champSelect = null;
-                    this.Dispatcher.Invoke(async () => {
+                    await this.Dispatcher.InvokeAsync(async () => {
                         if (_astraOverlay?.LeagueService != null)
                         {
                             champSelect = await _astraOverlay.LeagueService.GetChampSelectSession();
                         }
                     });
-                    await Task.Delay(100);
+                    
                     if (champSelect != null)
                     {
                         result = new {
@@ -412,13 +450,13 @@ public partial class MainWindow : Window
                 // Get owned champions
                 case "astra-get-owned-champions":
                     List<Services.OwnedChampion>? ownedChamps = null;
-                    this.Dispatcher.Invoke(async () => {
+                    await this.Dispatcher.InvokeAsync(async () => {
                         if (_astraOverlay?.LeagueService != null)
                         {
                             ownedChamps = await _astraOverlay.LeagueService.GetOwnedChampions();
                         }
                     });
-                    await Task.Delay(100);
+                    
                     if (ownedChamps != null)
                     {
                         result = ownedChamps.Select(c => new {
@@ -458,7 +496,7 @@ public partial class MainWindow : Window
                         var perksElement = ((JsonElement)request.payload).GetProperty("selectedPerkIds");
                         var selectedPerkIds = perksElement.EnumerateArray().Select(x => x.GetInt32()).ToList();
 
-                        this.Dispatcher.Invoke(async () => {
+                        await this.Dispatcher.InvokeAsync(async () => {
                             if (_astraOverlay?.LeagueService != null)
                             {
                                 imported = await _astraOverlay.LeagueService.SetRunePage(name, primaryStyleId, subStyleId, selectedPerkIds);
@@ -478,7 +516,7 @@ public partial class MainWindow : Window
                     bool spellsImported = false;
                     if (spellData != null) 
                     {
-                        this.Dispatcher.Invoke(async () => {
+                        await this.Dispatcher.InvokeAsync(async () => {
                             if (_astraOverlay?.LeagueService != null)
                             {
                                 spellsImported = await _astraOverlay.LeagueService.SetSummonerSpells(spellData["spell1Id"], spellData["spell2Id"]);
@@ -498,7 +536,7 @@ public partial class MainWindow : Window
                     {
                          int championId = itemSetData.GetProperty("championId").GetInt32();
                          
-                         this.Dispatcher.Invoke(async () => {
+                         await this.Dispatcher.InvokeAsync(async () => {
                             if (_astraOverlay?.LeagueService != null)
                             {
                                 var set = itemSetData.GetProperty("itemSet").Deserialize<Services.ItemSet>();
@@ -629,17 +667,26 @@ public partial class MainWindow : Window
                 // ==========================================
                 // STEAM SERVICE
                 // ==========================================
+                // ==========================================
+                // STEAM SERVICE
+                // ==========================================
+                case "steam-openid-login":
+                    var steamAuth = new SteamAuthService();
+                    var steamId = await steamAuth.StartSteamAuth();
+                    result = new { success = steamId != null, steamId = steamId };
+                    break;
+
                 case "steam-get-owned-games":
-                    if (request.payload is JsonElement steamIdEl1 && steamIdEl1.ValueKind == JsonValueKind.String)
+                    if (request.payload is JsonElement steamIdGames && steamIdGames.ValueKind == JsonValueKind.String)
                     {
-                        result = await _steamService.GetOwnedGames(steamIdEl1.GetString()!);
+                        result = await _steamService.GetOwnedGames(steamIdGames.GetString()!);
                     }
                     break;
 
                 case "steam-get-player-summary":
-                    if (request.payload is JsonElement steamIdEl2 && steamIdEl2.ValueKind == JsonValueKind.String)
+                    if (request.payload is JsonElement steamIdSummary && steamIdSummary.ValueKind == JsonValueKind.String)
                     {
-                        result = await _steamService.GetPlayerSummary(steamIdEl2.GetString()!);
+                        result = await _steamService.GetPlayerSummary(steamIdSummary.GetString()!);
                     }
                     break;
 
@@ -651,9 +698,9 @@ public partial class MainWindow : Window
                     break;
 
                 case "steam-get-recently-played":
-                    if (request.payload is JsonElement steamIdEl3 && steamIdEl3.ValueKind == JsonValueKind.String)
+                    if (request.payload is JsonElement steamIdRecent && steamIdRecent.ValueKind == JsonValueKind.String)
                     {
-                        result = await _steamService.GetRecentlyPlayedGames(steamIdEl3.GetString()!);
+                        result = await _steamService.GetRecentlyPlayedGames(steamIdRecent.GetString()!);
                     }
                     break;
 
@@ -667,36 +714,58 @@ public partial class MainWindow : Window
                     break;
 
                 case "steam-get-level":
-                    if (request.payload is JsonElement steamIdEl4 && steamIdEl4.ValueKind == JsonValueKind.String)
+                    if (request.payload is JsonElement steamIdLevel && steamIdLevel.ValueKind == JsonValueKind.String)
                     {
-                        result = await _steamService.GetSteamLevel(steamIdEl4.GetString()!);
+                        result = await _steamService.GetSteamLevel(steamIdLevel.GetString()!);
                     }
                     break;
 
                 case "steam-get-badges":
-                    if (request.payload is JsonElement steamIdEl5 && steamIdEl5.ValueKind == JsonValueKind.String)
+                    if (request.payload is JsonElement steamIdBadges && steamIdBadges.ValueKind == JsonValueKind.String)
                     {
-                        result = await _steamService.GetSteamBadges(steamIdEl5.GetString()!);
+                        result = await _steamService.GetSteamBadges(steamIdBadges.GetString()!);
                     }
                     break;
 
                 case "steam-get-friends":
-                    if (request.payload is JsonElement steamIdEl6 && steamIdEl6.ValueKind == JsonValueKind.String)
+                    if (request.payload is JsonElement steamIdFriends && steamIdFriends.ValueKind == JsonValueKind.String)
                     {
-                        result = await _steamService.GetFriendsWithStatus(steamIdEl6.GetString()!);
+                        result = await _steamService.GetFriendsWithStatus(steamIdFriends.GetString()!);
                     }
                     break;
 
-                case "steam-launch-game":
-                    if (request.payload is JsonElement appIdEl && appIdEl.ValueKind == JsonValueKind.Number)
+                case "steam-get-player-count":
+                    if (request.payload is JsonElement countAppIdEl && countAppIdEl.ValueKind == JsonValueKind.Number)
                     {
-                        var appId = appIdEl.GetInt32();
-                        System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
-                        {
-                            FileName = $"steam://rungameid/{appId}",
-                            UseShellExecute = true
-                        });
-                        result = new { success = true };
+                        var appId = countAppIdEl.GetInt32();
+                        result = await _steamService.GetCurrentPlayerCount(appId);
+                    }
+                    break;
+
+                case "steam-get-local-info":
+                    result = await Task.Run(() => _steamService.GetLocalInfo());
+                    break;
+
+                case "steam-launch-game":
+                    // Payload can be integer (appId) or string
+                    string? launchAppId = null;
+                    if (request.payload is JsonElement launchAppEl)
+                    {
+                        if (launchAppEl.ValueKind == JsonValueKind.Number) launchAppId = launchAppEl.GetInt32().ToString();
+                        else if (launchAppEl.ValueKind == JsonValueKind.String) launchAppId = launchAppEl.GetString();
+                    }
+                    
+                    if (launchAppId != null)
+                    {
+                        result = await Task.Run(() => _steamService.LaunchGame(launchAppId));
+                    }
+                    break;
+
+                case "steam-get-reviews":
+                    if (request.payload is JsonElement reviewAppIdEl && reviewAppIdEl.ValueKind == JsonValueKind.Number)
+                    {
+                        var revAppId = reviewAppIdEl.GetInt32();
+                        result = await _steamService.GetGameReviews(revAppId);
                     }
                     break;
 
@@ -713,56 +782,7 @@ public partial class MainWindow : Window
                     }
                     break;
 
-                // ==========================================
-                // LAUNCHERS SERVICE
-                // ==========================================
-                case "launchers-get-all":
-                    result = await _launchersService.GetAllLaunchersInfo();
-                    break;
-
-                case "epic-get-info":
-                    result = await _launchersService.GetEpicInfo();
-                    break;
-
-                case "epic-launch-game":
-                    if (request.payload is JsonElement epicAppEl && epicAppEl.ValueKind == JsonValueKind.String)
-                    {
-                        result = await _launchersService.LaunchEpicGame(epicAppEl.GetString()!);
-                    }
-                    break;
-
-                case "gog-get-info":
-                    result = await _launchersService.GetGogInfo();
-                    break;
-
-                case "gog-launch-game":
-                    if (request.payload is JsonElement gogIdEl && gogIdEl.ValueKind == JsonValueKind.String)
-                    {
-                        result = await _launchersService.LaunchGogGame(gogIdEl.GetString()!);
-                    }
-                    break;
-
-                case "ea-get-info":
-                    result = await _launchersService.GetEaInfo();
-                    break;
-
-                case "ea-launch-game":
-                    if (request.payload is JsonElement eaIdEl && eaIdEl.ValueKind == JsonValueKind.String)
-                    {
-                        result = await _launchersService.LaunchEaGame(eaIdEl.GetString()!);
-                    }
-                    break;
-
-                case "ubisoft-get-info":
-                    result = await _launchersService.GetUbisoftInfo();
-                    break;
-
-                case "ubisoft-launch-game":
-                    if (request.payload is JsonElement ubiIdEl && ubiIdEl.ValueKind == JsonValueKind.String)
-                    {
-                        result = await _launchersService.LaunchUbisoftGame(ubiIdEl.GetString()!);
-                    }
-                    break;
+                // (Duplicate block removed)
 
                 // ==========================================
                 // TORRENT SERVICE
