@@ -14,7 +14,7 @@ namespace Orbit.Core.Services
         {
             var appData = Environment.GetFolderPath(Environment.SpecialFolder.ApplicationData);
             _configPath = Path.Combine(appData, "Orbit", "config.json");
-            
+
             // Ensure directory exists
             var dir = Path.GetDirectoryName(_configPath);
             if (dir != null && !Directory.Exists(dir))
@@ -45,24 +45,35 @@ namespace Orbit.Core.Services
             }
         }
 
-        public void Set(string key, object value)
+        public void Set(string key, object? value)
         {
-            _config[key] = value;
+            if (value == null)
+            {
+                if (_config.ContainsKey(key)) _config.Remove(key);
+            }
+            else
+            {
+                _config[key] = value;
+            }
             SaveConfig();
         }
 
-        public T Get<T>(string key)
+        public T? Get<T>(string key)
         {
             if (_config.TryGetValue(key, out var value))
             {
                 // JsonElement handling because System.Text.Json deserializes to JsonElement by default for object
                 if (value is JsonElement element)
                 {
-                    return element.Deserialize<T>();
+                    try
+                    {
+                        return element.Deserialize<T>();
+                    }
+                    catch { return default; }
                 }
                 return (T)value; // Basic cast attempt
             }
-            return default(T);
+            return default;
         }
 
         private void SaveConfig()

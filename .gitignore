@@ -34,3 +34,8 @@ build
 njsproj
 *.sln
 *.sw?
+
+
+.env
+firebase-service-account.json
+*.json

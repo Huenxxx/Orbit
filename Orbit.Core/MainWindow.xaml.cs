@@ -35,7 +35,7 @@ public partial class MainWindow : Window
     // P/Invoke for window dragging
     [System.Runtime.InteropServices.DllImport("user32.dll")]
     public static extern IntPtr SendMessage(IntPtr hWnd, int wMsg, int wParam, int lParam);
-    
+
     [System.Runtime.InteropServices.DllImport("user32.dll")]
     public static extern bool ReleaseCapture();
 
@@ -67,17 +67,17 @@ public partial class MainWindow : Window
     {
         _notifyIcon = new Forms.NotifyIcon();
         _notifyIcon.Text = "Orbit - Game Library Manager";
-        
+
         // Create icon programmatically (simple orbit design)
         _notifyIcon.Icon = CreateOrbitIcon();
-        
+
         // Context menu
         var contextMenu = new Forms.ContextMenuStrip();
         contextMenu.Items.Add("Mostrar Orbit", null, (s, e) => ShowWindow());
         contextMenu.Items.Add("Iniciar Astra Overlay", null, (s, e) => StartAstraOverlay());
         contextMenu.Items.Add("-"); // Separator
         contextMenu.Items.Add("Salir", null, (s, e) => ExitApplication());
-        
+
         _notifyIcon.ContextMenuStrip = contextMenu;
         _notifyIcon.DoubleClick += (s, e) => ShowWindow();
         _notifyIcon.Visible = true;
@@ -91,20 +91,20 @@ public partial class MainWindow : Window
         {
             g.Clear(Drawing.Color.Transparent);
             g.SmoothingMode = Drawing.Drawing2D.SmoothingMode.AntiAlias;
-            
+
             // Outer ring
             using var pen = new Drawing.Pen(Drawing.Color.FromArgb(99, 102, 241), 2);
             g.DrawEllipse(pen, 4, 4, 24, 24);
-            
+
             // Core
             using var brush = new Drawing.SolidBrush(Drawing.Color.FromArgb(6, 182, 212));
             g.FillEllipse(brush, 12, 12, 8, 8);
-            
+
             // Small orbiting dot
             using var pinkBrush = new Drawing.SolidBrush(Drawing.Color.FromArgb(244, 114, 182));
             g.FillEllipse(pinkBrush, 14, 2, 4, 4);
         }
-        
+
         return Drawing.Icon.FromHandle(bitmap.GetHicon());
     }
 
@@ -138,12 +138,14 @@ public partial class MainWindow : Window
 
     async void InitializeAsync()
     {
-        // Ensure WebView2 is ready
-        await MainWebView.EnsureCoreWebView2Async(null);
-        
+        // Ensure WebView2 is ready with a specific User Data Folder to avoid permission/locking issues
+        string userDataFolder = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData), "Orbit", "WebView2Data");
+        var env = await Microsoft.Web.WebView2.Core.CoreWebView2Environment.CreateAsync(null, userDataFolder);
+        await MainWebView.EnsureCoreWebView2Async(env);
+
         // Listen for messages from React
-        MainWebView.WebMessageReceived += MainWebView_WebMessageReceived;
-        
+        MainWebView.WebMessageReceived += MainWebView_WebMessageReceived!;
+
         // Inject the C# bridge into the page
         await InjectCSharpBridge();
     }
@@ -223,7 +225,7 @@ public partial class MainWindow : Window
         try
         {
             object? result = null;
-            
+
             switch (request.channel)
             {
                 // Launchers Service Handlers
@@ -282,7 +284,8 @@ public partial class MainWindow : Window
                     result = new { success = true };
                     break;
                 case "window-maximize":
-                    this.Dispatcher.Invoke(() => {
+                    this.Dispatcher.Invoke(() =>
+                    {
                         if (this.WindowState == WindowState.Maximized)
                             this.WindowState = WindowState.Normal;
                         else
@@ -291,7 +294,8 @@ public partial class MainWindow : Window
                     result = new { success = true };
                     break;
                 case "window-close":
-                    this.Dispatcher.Invoke(() => {
+                    this.Dispatcher.Invoke(() =>
+                    {
                         if (_isClosingToTray)
                         {
                             this.Hide();
@@ -304,18 +308,22 @@ public partial class MainWindow : Window
                     result = new { success = true };
                     break;
                 case "window-drag":
-                    this.Dispatcher.Invoke(() => {
-                        try {
+                    this.Dispatcher.Invoke(() =>
+                    {
+                        try
+                        {
                             ReleaseCapture();
                             SendMessage(new WindowInteropHelper(this).Handle, WM_NCLBUTTONDOWN, HT_CAPTION, 0);
-                        } catch { }
+                        }
+                        catch { }
                     });
                     result = new { success = true };
                     break;
 
                 // Astra Overlay
                 case "astra-start-service":
-                    this.Dispatcher.Invoke(() => {
+                    this.Dispatcher.Invoke(() =>
+                    {
                         if (_astraOverlay == null || !_astraOverlay.IsLoaded)
                         {
                             _astraOverlay = new AstraOverlay();
@@ -326,7 +334,8 @@ public partial class MainWindow : Window
                     break;
 
                 case "astra-stop-service":
-                    this.Dispatcher.Invoke(() => {
+                    this.Dispatcher.Invoke(() =>
+                    {
                         if (_astraOverlay != null)
                         {
                             _astraOverlay.StopService();
@@ -342,8 +351,9 @@ public partial class MainWindow : Window
                     bool isClientConnected = false;
                     bool isInGame = false;
                     int port = 0;
-                    
-                    this.Dispatcher.Invoke(() => {
+
+                    this.Dispatcher.Invoke(() =>
+                    {
                         if (_astraOverlay != null && _astraOverlay.IsServiceRunning)
                         {
                             isRunning = true;
@@ -353,8 +363,9 @@ public partial class MainWindow : Window
                             port = service.CurrentClient?.Port ?? 0;
                         }
                     });
-                    
-                    result = new { 
+
+                    result = new
+                    {
                         serviceRunning = isRunning,
                         clientConnected = isClientConnected,
                         inGame = isInGame,
@@ -365,16 +376,18 @@ public partial class MainWindow : Window
                 // Get current summoner account info
                 case "astra-get-summoner":
                     Services.SummonerInfo? summoner = null;
-                    await this.Dispatcher.InvokeAsync(async () => {
+                    await this.Dispatcher.InvokeAsync(async () =>
+                    {
                         if (_astraOverlay?.LeagueService != null)
                         {
                             summoner = await _astraOverlay.LeagueService.GetCurrentSummoner();
                         }
                     });
-                    
+
                     if (summoner != null)
                     {
-                        result = new {
+                        result = new
+                        {
                             displayName = summoner.DisplayName,
                             summonerId = summoner.SummonerId,
                             accountId = summoner.AccountId,
@@ -392,16 +405,18 @@ public partial class MainWindow : Window
                 // Get ranked stats
                 case "astra-get-ranked":
                     Services.RankedStats? ranked = null;
-                    await this.Dispatcher.InvokeAsync(async () => {
+                    await this.Dispatcher.InvokeAsync(async () =>
+                    {
                         if (_astraOverlay?.LeagueService != null)
                         {
                             ranked = await _astraOverlay.LeagueService.GetRankedStats();
                         }
                     });
-                    
+
                     if (ranked != null)
                     {
-                        result = new {
+                        result = new
+                        {
                             soloTier = ranked.SoloTier,
                             soloDivision = ranked.SoloDivision,
                             soloLP = ranked.SoloLP,
@@ -426,10 +441,11 @@ public partial class MainWindow : Window
                         champSelectSession = await _astraOverlay.LeagueService.GetChampSelectSession();
                         System.Diagnostics.Debug.WriteLine($"[IPC] ChampSelect result: {(champSelectSession != null ? $"ChampionId={champSelectSession.ChampionId}, Position={champSelectSession.AssignedPosition}" : "null")}");
                     }
-                    
+
                     if (champSelectSession != null)
                     {
-                        result = new {
+                        result = new
+                        {
                             gameId = champSelectSession.GameId,
                             isInChampSelect = true,
                             assignedPosition = champSelectSession.AssignedPosition,
@@ -449,16 +465,18 @@ public partial class MainWindow : Window
                 // Get owned champions
                 case "astra-get-owned-champions":
                     List<Services.OwnedChampion>? ownedChamps = null;
-                    await this.Dispatcher.InvokeAsync(async () => {
+                    await this.Dispatcher.InvokeAsync(async () =>
+                    {
                         if (_astraOverlay?.LeagueService != null)
                         {
                             ownedChamps = await _astraOverlay.LeagueService.GetOwnedChampions();
                         }
                     });
-                    
+
                     if (ownedChamps != null)
                     {
-                        result = ownedChamps.Select(c => new {
+                        result = ownedChamps.Select(c => new
+                        {
                             id = c.Id,
                             name = c.Name,
                             alias = c.Alias
@@ -474,48 +492,65 @@ public partial class MainWindow : Window
                     int roleChampId = 0;
                     if (request.payload != null && request.payload is JsonElement roleEl && roleEl.ValueKind == JsonValueKind.Number)
                         roleChampId = roleEl.GetInt32();
-                    
-                    result = await _astraOverlay.LeagueService.GetChampionRoles(roleChampId);
+
+                    if (_astraOverlay != null)
+                    {
+                        result = await _astraOverlay.LeagueService.GetChampionRoles(roleChampId);
+                    }
+                    else
+                    {
+                        result = null;
+                    }
                     break;
 
                 // Import runes
                 case "astra-import-runes":
-                    var runesData = ((JsonElement)request.payload).Deserialize<Dictionary<string, object>>();
+                    Dictionary<string, object>? runesData = null;
+                    if (request.payload != null)
+                    {
+                        runesData = ((JsonElement)request.payload).Deserialize<Dictionary<string, object>>();
+                    }
                     bool imported = false;
-                    
+
                     if (runesData != null)
                     {
                         string name = runesData["name"].ToString() ?? "Orbit Build";
                         int primaryStyleId = int.Parse(runesData["primaryStyleId"].ToString() ?? "0");
                         int subStyleId = int.Parse(runesData["subStyleId"].ToString() ?? "0");
-                        
+
                         // Parse list manually as Deserialize might be tricky with boxing
                         var perkString = runesData["selectedPerkIds"].ToString(); // Assume it comes as a JSON array string if parsed
                         // If it's a JsonElement array:
-                        var perksElement = ((JsonElement)request.payload).GetProperty("selectedPerkIds");
+                        var perksElement = ((JsonElement)request.payload!).GetProperty("selectedPerkIds");
                         var selectedPerkIds = perksElement.EnumerateArray().Select(x => x.GetInt32()).ToList();
 
-                        await this.Dispatcher.InvokeAsync(async () => {
+                        await this.Dispatcher.InvokeAsync(async () =>
+                        {
                             if (_astraOverlay?.LeagueService != null)
                             {
                                 imported = await _astraOverlay.LeagueService.SetRunePage(name, primaryStyleId, subStyleId, selectedPerkIds);
                             }
                         });
-                        
+
                         // Wait briefly
                         await Task.Delay(200);
                     }
-                    
+
                     result = new { success = imported };
                     break;
 
                 // Import spells
                 case "astra-import-spells":
-                    var spellData = ((JsonElement)request.payload).Deserialize<Dictionary<string, int>>();
-                    bool spellsImported = false;
-                    if (spellData != null) 
+                    Dictionary<string, int>? spellData = null;
+                    if (request.payload != null)
                     {
-                        await this.Dispatcher.InvokeAsync(async () => {
+                        spellData = ((JsonElement)request.payload).Deserialize<Dictionary<string, int>>();
+                    }
+                    bool spellsImported = false;
+                    if (spellData != null)
+                    {
+                        await this.Dispatcher.InvokeAsync(async () =>
+                        {
                             if (_astraOverlay?.LeagueService != null)
                             {
                                 spellsImported = await _astraOverlay.LeagueService.SetSummonerSpells(spellData["spell1Id"], spellData["spell2Id"]);
@@ -528,18 +563,27 @@ public partial class MainWindow : Window
 
                 // Import item set
                 case "astra-import-items":
-                    var itemSetData = ((JsonElement)request.payload); 
-                    bool itemsImported = false;
-                    
-                    if (itemSetData.ValueKind == JsonValueKind.Object)
+                    JsonElement itemSetData = default;
+                    bool hasPayload = false;
+
+                    if (request.payload != null)
                     {
-                         int championId = itemSetData.GetProperty("championId").GetInt32();
-                         
-                         await this.Dispatcher.InvokeAsync(async () => {
+                        itemSetData = (JsonElement)request.payload;
+                        hasPayload = true;
+                    }
+                    bool itemsImported = false;
+
+                    if (hasPayload && itemSetData.ValueKind == JsonValueKind.Object)
+                    {
+                        int championId = itemSetData.GetProperty("championId").GetInt32();
+
+                        await this.Dispatcher.InvokeAsync(async () =>
+                        {
                             if (_astraOverlay?.LeagueService != null)
                             {
                                 var set = itemSetData.GetProperty("itemSet").Deserialize<Services.ItemSet>();
-                                if (set != null) {
+                                if (set != null)
+                                {
                                     itemsImported = await _astraOverlay.LeagueService.SetItemSet(championId, set);
                                 }
                             }
@@ -552,7 +596,7 @@ public partial class MainWindow : Window
                 // ==========================================
                 // ASTRA BUILDS AUTO-IMPORT
                 // ==========================================
-                
+
                 // Get all builds for a role
                 case "astra-get-builds-for-role":
                     string roleForBuilds = "middle";
@@ -560,9 +604,10 @@ public partial class MainWindow : Window
                     {
                         roleForBuilds = roleForBuildsEl.GetString() ?? "middle";
                     }
-                    
+
                     var roleBuilds = ChampionBuildsService.GetBuildsForRole(roleForBuilds);
-                    result = roleBuilds.Select(b => new {
+                    result = roleBuilds.Select(b => new
+                    {
                         championId = b.ChampionId,
                         name = b.Name,
                         role = b.Role,
@@ -598,11 +643,12 @@ public partial class MainWindow : Window
                         if (buildPayload.TryGetProperty("role", out var buildRoleEl))
                             buildRole = buildRoleEl.GetString() ?? "middle";
                     }
-                    
+
                     var champBuild = ChampionBuildsService.GetBuild(buildChampId, buildRole);
                     if (champBuild != null)
                     {
-                        result = new {
+                        result = new
+                        {
                             championId = champBuild.ChampionId,
                             name = champBuild.Name,
                             role = champBuild.Role,
@@ -631,16 +677,18 @@ public partial class MainWindow : Window
                 // Auto-import build for current champ select
                 case "astra-check-auto-import":
                     AutoImportResult? autoImportResult = null;
-                    await this.Dispatcher.InvokeAsync(async () => {
+                    await this.Dispatcher.InvokeAsync(async () =>
+                    {
                         if (_astraOverlay?.LeagueService != null)
                         {
                             autoImportResult = await _astraOverlay.LeagueService.CheckAndAutoImportBuild();
                         }
                     });
-                    
+
                     if (autoImportResult != null)
                     {
-                        result = new {
+                        result = new
+                        {
                             success = autoImportResult.Success,
                             message = autoImportResult.Message,
                             championId = autoImportResult.ChampionId,
@@ -649,7 +697,8 @@ public partial class MainWindow : Window
                             runesImported = autoImportResult.RunesImported,
                             spellsImported = autoImportResult.SpellsImported,
                             itemsImported = autoImportResult.ItemsImported,
-                            build = autoImportResult.Build != null ? new {
+                            build = autoImportResult.Build != null ? new
+                            {
                                 name = autoImportResult.Build.Name,
                                 tier = autoImportResult.Build.Tier,
                                 winRate = autoImportResult.Build.WinRate
@@ -664,10 +713,10 @@ public partial class MainWindow : Window
                     if (request.payload is JsonElement importBuildPayload && importBuildPayload.ValueKind == JsonValueKind.Object)
                     {
                         int importChampId = importBuildPayload.GetProperty("championId").GetInt32();
-                        string importRole = importBuildPayload.TryGetProperty("role", out var importRoleEl) 
-                            ? importRoleEl.GetString() ?? "middle" 
+                        string importRole = importBuildPayload.TryGetProperty("role", out var importRoleEl)
+                            ? importRoleEl.GetString() ?? "middle"
                             : "middle";
-                        
+
                         var buildToImport = ChampionBuildsService.GetBuild(importChampId, importRole);
                         if (buildToImport == null)
                         {
@@ -675,10 +724,11 @@ public partial class MainWindow : Window
                             var allBuilds = ChampionBuildsService.GetAllBuilds();
                             buildToImport = allBuilds.FirstOrDefault(b => b.ChampionId == importChampId);
                         }
-                        
+
                         if (buildToImport != null)
                         {
-                            await this.Dispatcher.InvokeAsync(async () => {
+                            await this.Dispatcher.InvokeAsync(async () =>
+                            {
                                 if (_astraOverlay?.LeagueService != null)
                                 {
                                     manualImportResult = await _astraOverlay.LeagueService.ImportBuild(importChampId, buildToImport);
@@ -686,10 +736,11 @@ public partial class MainWindow : Window
                             });
                         }
                     }
-                    
+
                     if (manualImportResult != null)
                     {
-                        result = new {
+                        result = new
+                        {
                             success = manualImportResult.Success,
                             message = manualImportResult.Message,
                             runesImported = manualImportResult.RunesImported,
@@ -706,13 +757,14 @@ public partial class MainWindow : Window
                 // Enable/Disable auto-import
                 case "astra-set-auto-import":
                     bool autoImportEnabled = true;
-                    if (request.payload is JsonElement autoImportEl && autoImportEl.ValueKind == JsonValueKind.True || 
+                    if (request.payload is JsonElement autoImportEl && autoImportEl.ValueKind == JsonValueKind.True ||
                         request.payload is JsonElement autoImportEl2 && autoImportEl2.ValueKind == JsonValueKind.False)
                     {
                         autoImportEnabled = ((JsonElement)request.payload).GetBoolean();
                     }
-                    
-                    this.Dispatcher.Invoke(() => {
+
+                    this.Dispatcher.Invoke(() =>
+                    {
                         if (_astraOverlay?.LeagueService != null)
                         {
                             _astraOverlay.LeagueService.AutoImportEnabled = autoImportEnabled;
@@ -724,7 +776,8 @@ public partial class MainWindow : Window
                 // Get auto-import status
                 case "astra-get-auto-import-status":
                     bool currentAutoImportEnabled = true;
-                    this.Dispatcher.Invoke(() => {
+                    this.Dispatcher.Invoke(() =>
+                    {
                         if (_astraOverlay?.LeagueService != null)
                         {
                             currentAutoImportEnabled = _astraOverlay.LeagueService.AutoImportEnabled;
@@ -937,7 +990,7 @@ public partial class MainWindow : Window
                         if (launchAppEl.ValueKind == JsonValueKind.Number) launchAppId = launchAppEl.GetInt32().ToString();
                         else if (launchAppEl.ValueKind == JsonValueKind.String) launchAppId = launchAppEl.GetString();
                     }
-                    
+
                     if (launchAppId != null)
                     {
                         result = await Task.Run(() => _steamService.LaunchGame(launchAppId));
@@ -1054,7 +1107,7 @@ public partial class MainWindow : Window
         {
             e.Cancel = true;
             this.Hide();
-            
+
             // Show notification on first minimize
             if (_notifyIcon != null)
             {

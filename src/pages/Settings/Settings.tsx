@@ -1,4 +1,4 @@
-import { } from 'react';
+import { useState } from 'react';
 import { motion } from 'framer-motion';
 import {
     Settings as SettingsIcon,
@@ -48,6 +48,29 @@ const EpicIcon = () => (
 
 export function Settings() {
     const { settings, updateSettings } = useSettingsStore();
+
+    // --- Server Test State ---
+    const [serverStatus, setServerStatus] = useState<any>(null);
+    const [serverProfile, setServerProfile] = useState<any>(null);
+    const [isLoadingServer, setIsLoadingServer] = useState(false);
+
+    const testServerConnection = async () => {
+        setIsLoadingServer(true);
+        try {
+            const status = await import('../../services/serverApi').then(m => m.serverApi.checkStatus());
+            setServerStatus(status);
+
+            // Try authorized call
+            const profile = await import('../../services/serverApi').then(m => m.serverApi.getMyProfile());
+            setServerProfile(profile);
+        } catch (error) {
+            console.error(error);
+            setServerStatus({ error: 'Connection failed. Is Server running?' });
+        } finally {
+            setIsLoadingServer(false);
+        }
+    };
+
     const {
         steamAccount,
         isLinkingSteam,
@@ -394,6 +417,37 @@ export function Settings() {
                             </div>
 
 
+                        </div>
+
+                        {/* --- Server Test Card (Beta) --- */}
+                        <div className="linked-account-card">
+                            <div className="account-main-row">
+                                <div className="account-platform">
+                                    <span style={{ width: 20, height: 20, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+                                        <Cloud size={18} />
+                                    </span>
+                                    <span>Orbit Cloud Server</span>
+                                </div>
+
+                                <div className="account-not-linked" style={{ flex: 1, justifyContent: 'flex-end', gap: 10 }}>
+                                    {serverStatus && (
+                                        <span style={{ fontSize: '0.8em', color: '#4ade80' }}>Active: {serverStatus.server}</span>
+                                    )}
+                                    <button
+                                        className="btn btn-primary btn-sm"
+                                        onClick={testServerConnection}
+                                        disabled={isLoadingServer}
+                                    >
+                                        {isLoadingServer ? <Loader2 size={16} className="animate-spin" /> : 'Probar Conexión'}
+                                    </button>
+                                </div>
+                            </div>
+
+                            {(serverStatus || serverProfile) && (
+                                <div style={{ marginTop: 10, padding: 10, background: 'rgba(0,0,0,0.2)', borderRadius: 8, fontSize: '0.8em', overflow: 'auto', maxHeight: 200 }}>
+                                    <pre>{JSON.stringify({ status: serverStatus, profile: serverProfile }, null, 2)}</pre>
+                                </div>
+                            )}
                         </div>
 
                         {/* EA Games Account */}

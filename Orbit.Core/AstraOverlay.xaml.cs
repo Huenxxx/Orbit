@@ -15,7 +15,7 @@ public partial class AstraOverlay : Window
 {
     private readonly LeagueDetectionService _leagueService;
     private readonly KeyboardHook _keyboardHook;
-    private bool _isConnected;
+
     private bool _isInGame;
     private bool _isTabHeld;
 
@@ -25,20 +25,20 @@ public partial class AstraOverlay : Window
     public AstraOverlay()
     {
         InitializeComponent();
-        
+
         _leagueService = new LeagueDetectionService();
         _keyboardHook = new KeyboardHook();
-        
+
         // Subscribe to League events
         _leagueService.ClientConnected += OnClientConnected;
         _leagueService.ClientDisconnected += OnClientDisconnected;
         _leagueService.GameStateChanged += OnGameStateChanged;
         _leagueService.LiveDataUpdated += OnLiveDataUpdated;
-        
+
         // Subscribe to keyboard events
         _keyboardHook.KeyDown += OnKeyDown;
         _keyboardHook.KeyUp += OnKeyUp;
-        
+
         // Start hidden - will show only when in game + TAB held
         this.Visibility = Visibility.Hidden;
     }
@@ -49,15 +49,15 @@ public partial class AstraOverlay : Window
     public void StartService()
     {
         if (IsServiceRunning) return;
-        
+
         IsServiceRunning = true;
         _leagueService.StartMonitoring(2000);
         _keyboardHook.Start();
-        
+
         // Show briefly to indicate service started, then hide
         this.Visibility = Visibility.Visible;
         UpdateStatus("Service started. Searching for League...");
-        
+
         // Hide after 2 seconds if not in game
         var timer = new System.Windows.Threading.DispatcherTimer();
         timer.Interval = TimeSpan.FromSeconds(2);
@@ -122,7 +122,7 @@ public partial class AstraOverlay : Window
     {
         Dispatcher.Invoke(() =>
         {
-            _isConnected = true;
+
             ConnectionDot.Fill = new Media.SolidColorBrush(Media.Color.FromRgb(34, 197, 94)); // Green
             ConnectionStatus.Text = $"Connected (Port {info.Port})";
             StatusIndicator.Text = " • CONNECTED";
@@ -135,16 +135,16 @@ public partial class AstraOverlay : Window
     {
         Dispatcher.Invoke(() =>
         {
-            _isConnected = false;
+
             _isInGame = false;
             ConnectionDot.Fill = new Media.SolidColorBrush(Media.Color.FromRgb(239, 68, 68)); // Red
             ConnectionStatus.Text = "Not Detected";
             StatusIndicator.Text = " • DETECTING";
             StatusIndicator.Foreground = new Media.SolidColorBrush(Media.Color.FromRgb(245, 158, 11));
-            
+
             GameStatsPanel.Visibility = Visibility.Collapsed;
             WaitingPanel.Visibility = Visibility.Collapsed;
-            
+
             UpdateOverlayVisibility();
         });
     }
@@ -154,7 +154,7 @@ public partial class AstraOverlay : Window
         Dispatcher.Invoke(() =>
         {
             _isInGame = state.IsInGame;
-            
+
             if (state.IsInGame)
             {
                 StatusIndicator.Text = " • IN GAME";
@@ -170,7 +170,7 @@ public partial class AstraOverlay : Window
                 WaitingPanel.Visibility = Visibility.Visible;
                 ResetStats();
             }
-            
+
             UpdateOverlayVisibility();
         });
     }
@@ -183,22 +183,22 @@ public partial class AstraOverlay : Window
             ChampionName.Text = data.ChampionName;
             SummonerName.Text = data.SummonerName;
             LevelText.Text = data.Level.ToString();
-            
+
             // Update KDA
             KillsText.Text = data.Kills.ToString();
             DeathsText.Text = data.Deaths.ToString();
             AssistsText.Text = data.Assists.ToString();
-            
+
             var kda = (data.Kills + data.Assists) / Math.Max(data.Deaths, 1.0);
             KdaRatio.Text = $"{kda:F2} KDA";
-            
+
             // Update CS
             CsText.Text = data.CreepScore.ToString();
             CsPerMinText.Text = $"{data.CsPerMin:F1} /min";
-            
+
             // Update Vision
             VisionText.Text = data.VisionScore.ToString();
-            
+
             // Update Game Time
             var minutes = (int)(data.GameTime / 60);
             var seconds = (int)(data.GameTime % 60);

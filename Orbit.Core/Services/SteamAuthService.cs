@@ -13,7 +13,7 @@ namespace Orbit.Core.Services
         private const string OPENID_URL = "https://steamcommunity.com/openid/login";
         private const string CALLBACK_URL = "http://127.0.0.1:5000/auth/steam/return";
 
-        public async Task<string> StartSteamAuth()
+        public async Task<string?> StartSteamAuth()
         {
             // 1. Construct OpenID Paramaters
             var query = HttpUtility.ParseQueryString(string.Empty);
@@ -48,7 +48,7 @@ namespace Orbit.Core.Services
                 // 5. Validate parameters 
                 // (In a real app, strict validation against Steam server is required 'check_authentication')
                 // For now, parsing the claimed_id is enough for MVP
-                
+
                 var steamId = ExtractSteamId(request.QueryString["openid.claimed_id"]);
 
                 // 6. Send Response to Browser
@@ -158,7 +158,7 @@ namespace Orbit.Core.Services
             }
         }
 
-        private string ExtractSteamId(string claimedId)
+        private string? ExtractSteamId(string? claimedId)
         {
             if (string.IsNullOrEmpty(claimedId)) return null;
             // Format: https://steamcommunity.com/openid/id/76561198...

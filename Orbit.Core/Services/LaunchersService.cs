@@ -77,11 +77,11 @@ public class LaunchersService
             using var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Epic Games\EpicGamesLauncher");
             if (key?.GetValue("AppDataPath") is string appDataPath && !string.IsNullOrEmpty(appDataPath))
             {
-               var potentialPath = Path.Combine(appDataPath, "Manifests");
-               if (Directory.Exists(potentialPath))
-               {
-                   manifestPath = potentialPath;
-               }
+                var potentialPath = Path.Combine(appDataPath, "Manifests");
+                if (Directory.Exists(potentialPath))
+                {
+                    manifestPath = potentialPath;
+                }
             }
         }
         catch { }
@@ -89,16 +89,16 @@ public class LaunchersService
         // Strategy 2: Common ProgramData Path (Fallback)
         if (string.IsNullOrEmpty(manifestPath))
         {
-             var commonPath = @"C:\ProgramData\Epic\EpicGamesLauncher\Data\Manifests";
-             if (Directory.Exists(commonPath))
-             {
-                 manifestPath = commonPath;
-             }
+            var commonPath = @"C:\ProgramData\Epic\EpicGamesLauncher\Data\Manifests";
+            if (Directory.Exists(commonPath))
+            {
+                manifestPath = commonPath;
+            }
         }
 
         if (string.IsNullOrEmpty(manifestPath))
         {
-             return games;
+            return games;
         }
 
         try
@@ -122,7 +122,7 @@ public class LaunchersService
                         var gameId = appName;
                         if (string.IsNullOrEmpty(gameId))
                         {
-                             gameId = root.TryGetProperty("CatalogItemId", out var cid) ? cid.GetString() : null;
+                            gameId = root.TryGetProperty("CatalogItemId", out var cid) ? cid.GetString() : null;
                         }
 
                         games.Add(new InstalledGame
@@ -263,7 +263,7 @@ public class LaunchersService
                         {
                             var gameName = gameKey.GetValue("GAMENAME") as string;
                             var exePath = gameKey.GetValue("EXE") as string;
-                            var installPath = gameKey.GetValue("PATH") as string ?? 
+                            var installPath = gameKey.GetValue("PATH") as string ??
                                 (exePath != null ? Path.GetDirectoryName(exePath) : null);
 
                             if (!string.IsNullOrEmpty(gameName))
@@ -305,7 +305,7 @@ public class LaunchersService
                                 using var doc = JsonDocument.Parse(content);
                                 var root = doc.RootElement;
 
-                                var gameId = root.TryGetProperty("gameId", out var gid) ? gid.GetString() 
+                                var gameId = root.TryGetProperty("gameId", out var gid) ? gid.GetString()
                                     : Path.GetFileNameWithoutExtension(infoFiles[0]).Replace("goggame-", "");
                                 var name = root.TryGetProperty("name", out var n) ? n.GetString() : Path.GetFileName(dir);
 
@@ -424,10 +424,10 @@ public class LaunchersService
     {
         var games = new List<InstalledGame>();
         var logPath = Path.Combine(AppDomain.CurrentDomain.BaseDirectory, "ea_debug.txt");
-        
-        void Log(string message) 
+
+        void Log(string message)
         {
-            try { File.AppendAllText(logPath, message + Environment.NewLine); } catch {}
+            try { File.AppendAllText(logPath, message + Environment.NewLine); } catch { }
             System.Diagnostics.Debug.WriteLine(message);
         }
 
@@ -441,7 +441,7 @@ public class LaunchersService
         foreach (var contentPath in contentPaths)
         {
             Log($"[EA] Checking content path: {contentPath}");
-            if (!Directory.Exists(contentPath)) 
+            if (!Directory.Exists(contentPath))
             {
                 Log($"[EA] Path does not exist: {contentPath}");
                 continue;
@@ -469,7 +469,7 @@ public class LaunchersService
                             var content = await File.ReadAllTextAsync(manifestFiles[0]);
                             var idMatch = Regex.Match(content, @"id=([^\r\n&]+)");
                             var titleMatch = Regex.Match(content, @"title=([^\r\n&]+)"); // Try to find title in manifest
-                            
+
                             var gameId = idMatch.Success ? idMatch.Groups[1].Value : Path.GetFileName(dir);
                             var gameName = titleMatch.Success ? titleMatch.Groups[1].Value : Path.GetFileName(dir).Replace("_", " ");
 
@@ -486,7 +486,7 @@ public class LaunchersService
                     }
                     catch (Exception ex)
                     {
-                         Log($"[EA] Error processing dir {dir}: {ex.Message}");
+                        Log($"[EA] Error processing dir {dir}: {ex.Message}");
                     }
                 }
             }
@@ -510,21 +510,21 @@ public class LaunchersService
                     Log($"[EA] Found potential game folder: {dirName} in {folder}");
 
                     // Skip the launcher itself and other non-game folders
-                    if (dirName.Equals("EA Desktop", StringComparison.OrdinalIgnoreCase) || 
+                    if (dirName.Equals("EA Desktop", StringComparison.OrdinalIgnoreCase) ||
                         dirName.Equals("Electronic Arts", StringComparison.OrdinalIgnoreCase) ||
                         dirName.Equals("Origin", StringComparison.OrdinalIgnoreCase) ||
                         dirName.Equals("EA Core", StringComparison.OrdinalIgnoreCase) ||
                         dirName.StartsWith("DirectX", StringComparison.OrdinalIgnoreCase) ||
                         dirName.StartsWith("__Installer", StringComparison.OrdinalIgnoreCase))
                     {
-                         Log($"[EA] Skipping non-game directory: {dirName}");
-                         continue;
+                        Log($"[EA] Skipping non-game directory: {dirName}");
+                        continue;
                     }
 
                     if (!games.Any(g => g.Name == dirName))
                     {
                         // Double check if it looks like a game (has an exe or __Installer)
-                        bool isLikelyGame = Directory.Exists(Path.Combine(dir, "__Installer")) || 
+                        bool isLikelyGame = Directory.Exists(Path.Combine(dir, "__Installer")) ||
                                            Directory.GetFiles(dir, "*.exe", SearchOption.TopDirectoryOnly).Any();
 
                         if (isLikelyGame)
@@ -570,13 +570,13 @@ public class LaunchersService
                     using var gameKey = eaKey.OpenSubKey(subKeyName);
                     if (gameKey == null) continue;
 
-                    var installDir = gameKey.GetValue("Install Location") as string ?? 
+                    var installDir = gameKey.GetValue("Install Location") as string ??
                                     gameKey.GetValue("Install Dir") as string;
 
                     if (!string.IsNullOrEmpty(installDir) && Directory.Exists(installDir))
                     {
                         var displayName = gameKey.GetValue("DisplayName") as string ?? subKeyName;
-                        
+
                         if (!games.Any(g => g.InstallPath?.Equals(installDir, StringComparison.OrdinalIgnoreCase) == true))
                         {
                             Log($"[EA] Found game via Registry: {displayName} at {installDir}");
@@ -673,36 +673,39 @@ public class LaunchersService
 
     public async Task<List<InstalledGame>> GetUbisoftInstalledGames()
     {
-        var games = new List<InstalledGame>();
-
-        try
+        return await Task.Run(() =>
         {
-            using var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Ubisoft\Launcher\Installs");
-            if (key != null)
+            var games = new List<InstalledGame>();
+
+            try
             {
-                foreach (var subKeyName in key.GetSubKeyNames())
+                using var key = Registry.LocalMachine.OpenSubKey(@"SOFTWARE\WOW6432Node\Ubisoft\Launcher\Installs");
+                if (key != null)
                 {
-                    try
+                    foreach (var subKeyName in key.GetSubKeyNames())
                     {
-                        using var gameKey = key.OpenSubKey(subKeyName);
-                        if (gameKey?.GetValue("InstallDir") is string installPath)
+                        try
                         {
-                            games.Add(new InstalledGame
+                            using var gameKey = key.OpenSubKey(subKeyName);
+                            if (gameKey?.GetValue("InstallDir") is string installPath)
                             {
-                                Id = subKeyName,
-                                Name = Path.GetFileName(installPath),
-                                InstallPath = installPath,
-                                Platform = "ubisoft"
-                            });
+                                games.Add(new InstalledGame
+                                {
+                                    Id = subKeyName,
+                                    Name = Path.GetFileName(installPath),
+                                    InstallPath = installPath,
+                                    Platform = "ubisoft"
+                                });
+                            }
                         }
+                        catch { }
                     }
-                    catch { }
                 }
             }
-        }
-        catch { }
+            catch { }
 
-        return games;
+            return games;
+        });
     }
 
     public Task<object> LaunchUbisoftGame(string gameId)
@@ -774,7 +777,7 @@ public class LaunchersService
         using var eaDoc = JsonDocument.Parse(eaJson);
         using var ubisoftDoc = JsonDocument.Parse(ubisoftJson);
 
-        var totalGames = 
+        var totalGames =
             (epicDoc.RootElement.TryGetProperty("gameCount", out var ec) ? ec.GetInt32() : 0) +
             (gogDoc.RootElement.TryGetProperty("gameCount", out var gc) ? gc.GetInt32() : 0) +
             (eaDoc.RootElement.TryGetProperty("gameCount", out var eac) ? eac.GetInt32() : 0) +

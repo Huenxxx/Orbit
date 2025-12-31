@@ -15,27 +15,27 @@ public class SteamService
     private static readonly HttpClient _httpClient = new();
 
     #region Response Classes
-    
+
     public class SteamGame
     {
         [JsonPropertyName("appid")]
         public int AppId { get; set; }
-        
+
         [JsonPropertyName("name")]
         public string? Name { get; set; }
-        
+
         [JsonPropertyName("playtime_forever")]
         public int PlaytimeForever { get; set; }
-        
+
         [JsonPropertyName("playtime_2weeks")]
         public int Playtime2Weeks { get; set; }
-        
+
         [JsonPropertyName("img_icon_url")]
         public string? ImgIconUrl { get; set; }
-        
+
         // Computed URLs
-        public string? IconUrl => !string.IsNullOrEmpty(ImgIconUrl) 
-            ? $"https://media.steampowered.com/steamcommunity/public/images/apps/{AppId}/{ImgIconUrl}.jpg" 
+        public string? IconUrl => !string.IsNullOrEmpty(ImgIconUrl)
+            ? $"https://media.steampowered.com/steamcommunity/public/images/apps/{AppId}/{ImgIconUrl}.jpg"
             : null;
         public string HeaderUrl => $"https://cdn.cloudflare.steamstatic.com/steam/apps/{AppId}/header.jpg";
         public string CapsuleUrl => $"https://cdn.cloudflare.steamstatic.com/steam/apps/{AppId}/capsule_231x87.jpg";
@@ -83,7 +83,7 @@ public class SteamService
         {
             var url = $"{STEAM_API_BASE}/IPlayerService/GetOwnedGames/v1/?key={STEAM_API_KEY}&steamid={steamId}&include_appinfo=true&include_played_free_games=true&format=json";
             var response = await _httpClient.GetAsync(url);
-            
+
             if (!response.IsSuccessStatusCode)
             {
                 return new { success = false, error = $"Steam API responded with status: {response.StatusCode}", games = Array.Empty<object>() };
@@ -113,8 +113,8 @@ public class SteamService
                     name,
                     playtime_forever = playtimeForever,
                     playtime_2weeks = playtime2Weeks,
-                    iconUrl = !string.IsNullOrEmpty(imgIconUrl) 
-                        ? $"https://media.steampowered.com/steamcommunity/public/images/apps/{appId}/{imgIconUrl}.jpg" 
+                    iconUrl = !string.IsNullOrEmpty(imgIconUrl)
+                        ? $"https://media.steampowered.com/steamcommunity/public/images/apps/{appId}/{imgIconUrl}.jpg"
                         : null,
                     headerUrl = $"https://cdn.cloudflare.steamstatic.com/steam/apps/{appId}/header.jpg",
                     capsuleUrl = $"https://cdn.cloudflare.steamstatic.com/steam/apps/{appId}/capsule_231x87.jpg"
@@ -152,8 +152,8 @@ public class SteamService
             using var doc = JsonDocument.Parse(json);
             var root = doc.RootElement;
 
-            if (!root.TryGetProperty("response", out var resp) || 
-                !resp.TryGetProperty("players", out var players) || 
+            if (!root.TryGetProperty("response", out var resp) ||
+                !resp.TryGetProperty("players", out var players) ||
                 players.GetArrayLength() == 0)
             {
                 return new { success = false, error = "No se encontró el perfil de Steam. Verifica tu Steam ID." };
@@ -670,11 +670,11 @@ public class SteamService
                 var total = summary.TryGetProperty("total_reviews", out var t) ? t.GetInt32() : 0;
                 var positive = summary.TryGetProperty("total_positive", out var p) ? p.GetInt32() : 0;
                 var negative = summary.TryGetProperty("total_negative", out var n) ? n.GetInt32() : 0;
-                
-                return new 
-                { 
-                    success = true, 
-                    reviews = new 
+
+                return new
+                {
+                    success = true,
+                    reviews = new
                     {
                         scoreDescription = scoreDesc,
                         total,
@@ -701,9 +701,9 @@ public class SteamService
         try
         {
             string? installPath = null;
-            
+
             // 1. Try Registry
-            try 
+            try
             {
                 using var key = Microsoft.Win32.Registry.CurrentUser.OpenSubKey(@"Software\Valve\Steam");
                 if (key?.GetValue("SteamPath") is string iPath)
@@ -711,7 +711,7 @@ public class SteamService
                     installPath = iPath.Replace("/", "\\");
                 }
             }
-            catch {}
+            catch { }
 
             // 2. Fallback to common paths
             if (string.IsNullOrEmpty(installPath))
@@ -744,35 +744,36 @@ public class SteamService
                 if (System.IO.File.Exists(loginFile))
                 {
                     var lines = System.IO.File.ReadAllLines(loginFile);
-                    string? currentSteamId = null;
-                    string? currentName = null;
-                    bool isMostRecent = false;
+
+
+
 
                     // Extremely basic VDF parser specifically for loginusers.vdf format
                     // Matches: "7656..." { ... "AccountName" "..." ... "MostRecent" "1" ... }
-                    
+
                     // Note: A proper VDF parser is better, but this regex/loop approach works for 99% of cases without extra deps
                     // We scan for the pattern of steamid -> props
-                    
+
                     var content = System.IO.File.ReadAllText(loginFile);
-                    
+
                     // Look for the block with "MostRecent"		"1"
                     // This is hacky, but VDF is proprietary.
                     // Instead, let's just assume if we find a file, we are installed. 
                     // Getting the exact user is a nice-to-have auth-fill.
-                    
+
                     // Simple regex for SteamID 64
                     var matches = System.Text.RegularExpressions.Regex.Matches(content, "\"(\\d{17})\"");
                     if (matches.Count > 0)
                     {
                         // Take the first one, it's often the logged in one or last used
                         var steamId = matches[0].Groups[1].Value;
-                        
+
                         // Try to find AccountName
                         var nameMatch = System.Text.RegularExpressions.Regex.Match(content, "\"AccountName\"\\s+\"([^\"]+)\"");
                         var accountName = nameMatch.Success ? nameMatch.Groups[1].Value : "Unknown";
-                        
-                        user = new {
+
+                        user = new
+                        {
                             steamId = steamId,
                             personaName = accountName,
                             timestamp = DateTimeOffset.UtcNow.ToUnixTimeSeconds(),
@@ -781,14 +782,14 @@ public class SteamService
                     }
                 }
             }
-            catch {}
+            catch { }
 
-            return new 
-            { 
-                success = true, 
-                steamInstalled = true, 
+            return new
+            {
+                success = true,
+                steamInstalled = true,
                 steamPath = installPath,
-                user = user 
+                user = user
             };
         }
         catch (Exception ex)

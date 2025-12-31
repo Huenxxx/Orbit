@@ -1,0 +1,45 @@
+{
+    "version": "0.2.0",
+    "configurations": [
+        {
+            "name": "Orbit.Server (Backend)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "build",
+            "program": "${workspaceFolder}/Orbit.Server/bin/Debug/net8.0/Orbit.Server.dll",
+            "args": [
+                "--urls",
+                "http://localhost:5270"
+            ],
+            "cwd": "${workspaceFolder}/Orbit.Server",
+            "stopAtEntry": false,
+            "env": {
+                "ASPNETCORE_ENVIRONMENT": "Development"
+            },
+            "sourceFileMap": {
+                "/Views": "${workspaceFolder}/Views"
+            }
+        },
+        {
+            "name": "Orbit.Client (Desktop)",
+            "type": "coreclr",
+            "request": "launch",
+            "preLaunchTask": "npm: dev",
+            "program": "${workspaceFolder}/Orbit.Core/bin/Debug/net8.0-windows/Orbit.Core.dll",
+            "args": [],
+            "cwd": "${workspaceFolder}/Orbit.Core",
+            "console": "integratedTerminal",
+            "stopAtEntry": false
+        }
+    ],
+    "compounds": [
+        {
+            "name": "Orbit Full Stack 🚀",
+            "configurations": [
+                "Orbit.Server (Backend)",
+                "Orbit.Client (Desktop)"
+            ],
+            "stopAll": true
+        }
+    ]
+}
