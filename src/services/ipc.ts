@@ -166,7 +166,85 @@ export const ipc = {
         importSpells: (spell1Id: number, spell2Id: number) =>
             ipc.invoke<{ success: boolean }>('astra-import-spells', { spell1Id, spell2Id }),
         importItems: (championId: number, itemSet: any) =>
-            ipc.invoke<{ success: boolean }>('astra-import-items', { championId, itemSet })
+            ipc.invoke<{ success: boolean }>('astra-import-items', { championId, itemSet }),
+
+        // Build system functions
+        getBuildsForRole: (role: string) => ipc.invoke<Array<{
+            championId: number;
+            name: string;
+            role: string;
+            tier: string;
+            winRate: number;
+            pickRate: number;
+            banRate: number;
+            primaryTree: number;
+            secondaryTree: number;
+            keystone: number;
+            primaryRunes: number[];
+            secondaryRunes: number[];
+            statShards: number[];
+            spell1: number;
+            spell2: number;
+            starterItems: string[];
+            coreItems: string[];
+            situationalItems: string[];
+            boots: string;
+            skillOrder: string;
+            playstyle: string;
+        }>>('astra-get-builds-for-role', role),
+
+        getChampionBuild: (championId: number, role: string) => ipc.invoke<{
+            championId: number;
+            name: string;
+            role: string;
+            tier: string;
+            winRate: number;
+            pickRate: number;
+            banRate: number;
+            primaryTree: number;
+            secondaryTree: number;
+            keystone: number;
+            primaryRunes: number[];
+            secondaryRunes: number[];
+            statShards: number[];
+            spell1: number;
+            spell2: number;
+            starterItems: string[];
+            coreItems: string[];
+            situationalItems: string[];
+            boots: string;
+            skillOrder: string;
+            playstyle: string;
+        } | null>('astra-get-champion-build', { championId, role }),
+
+        checkAutoImport: () => ipc.invoke<{
+            success: boolean;
+            message: string;
+            championId: number;
+            championName: string;
+            role: string;
+            runesImported: boolean;
+            spellsImported: boolean;
+            itemsImported: boolean;
+            build: { name: string; tier: string; winRate: number } | null;
+        } | null>('astra-check-auto-import'),
+
+        importBuild: (championId: number, role?: string) => ipc.invoke<{
+            success: boolean;
+            message: string;
+            runesImported: boolean;
+            spellsImported: boolean;
+            itemsImported: boolean;
+        }>('astra-import-build', { championId, role }),
+
+        setAutoImport: (enabled: boolean) => ipc.invoke<{
+            success: boolean;
+            autoImportEnabled: boolean;
+        }>('astra-set-auto-import', enabled),
+
+        getAutoImportStatus: () => ipc.invoke<{
+            autoImportEnabled: boolean;
+        }>('astra-get-auto-import-status')
     }
 };
 

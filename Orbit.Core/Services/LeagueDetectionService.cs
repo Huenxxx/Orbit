@@ -772,6 +772,164 @@ public class LeagueDetectionService : IDisposable
         catch { return new List<string>(); }
     }
 
+    // ========================================
+    // AUTO-IMPORT FUNCTIONALITY
+    // ========================================
+
+    private long _lastAutoImportedGameId = 0;
+    private bool _autoImportEnabled = true;
+    public event EventHandler<AutoImportResult>? BuildAutoImported;
+
+    /// <summary>
+    /// Enable or disable auto-import of builds
+    /// </summary>
+    public bool AutoImportEnabled
+    {
+        get => _autoImportEnabled;
+        set => _autoImportEnabled = value;
+    }
+
+    /// <summary>
+    /// Check and auto-import build for current champ select if applicable
+    /// </summary>
+    public async Task<AutoImportResult?> CheckAndAutoImportBuild()
+    {
+        if (!_autoImportEnabled) return null;
+        
+        var session = await GetChampSelectSession();
+        if (session == null) return null;
+        
+        // Only import once per game
+        if (session.GameId == _lastAutoImportedGameId) return null;
+        
+        // Must have a champion selected (not just intent)
+        if (session.ChampionId <= 0) return null;
+        
+        // Get the build
+        var role = session.AssignedPosition;
+        if (string.IsNullOrEmpty(role) || role.ToLower() == "none")
+        {
+            // Try to infer role from champion tags
+            var tags = await GetChampionRoles(session.ChampionId);
+            if (tags.Any())
+            {
+                var primaryTag = tags[0].ToLower();
+                role = primaryTag switch
+                {
+                    "marksman" => "bottom",
+                    "support" => "utility",
+                    "mage" or "assassin" => "middle",
+                    "fighter" or "tank" => "top",
+                    _ => "middle"
+                };
+            }
+            else
+            {
+                role = "middle"; // Default fallback
+            }
+        }
+        
+        var build = ChampionBuildsService.GetBuild(session.ChampionId, role);
+        if (build == null)
+        {
+            // Get default build for role
+            var roleBuilds = ChampionBuildsService.GetBuildsForRole(role);
+            build = roleBuilds.FirstOrDefault();
+        }
+        
+        if (build == null) return new AutoImportResult 
+        { 
+            Success = false, 
+            Message = "No build found for this champion/role" 
+        };
+        
+        // Perform the import
+        var result = await ImportBuild(session.ChampionId, build);
+        result.ChampionId = session.ChampionId;
+        result.ChampionName = build.Name;
+        result.Role = role;
+        result.Build = build;
+        
+        if (result.Success)
+        {
+            _lastAutoImportedGameId = session.GameId;
+            BuildAutoImported?.Invoke(this, result);
+        }
+        
+        return result;
+    }
+
+    /// <summary>
+    /// Import a specific build for a champion
+    /// </summary>
+    public async Task<AutoImportResult> ImportBuild(int championId, ChampionBuild build)
+    {
+        var result = new AutoImportResult
+        {
+            ChampionId = championId,
+            ChampionName = build.Name,
+            Role = build.Role,
+            Build = build
+        };
+
+        try
+        {
+            // 1. Import Runes
+            var runeName = $"Orbit: {build.Name}";
+            var perkIds = build.GetAllPerkIds();
+            var runesSuccess = await SetRunePage(runeName, build.PrimaryTree, build.SecondaryTree, perkIds);
+            result.RunesImported = runesSuccess;
+            
+            // 2. Import Summoner Spells
+            var spellsSuccess = await SetSummonerSpells(build.Spell1, build.Spell2);
+            result.SpellsImported = spellsSuccess;
+            
+            // 3. Import Item Set
+            var itemSetData = build.ToItemSetObject();
+            var itemsSuccess = await SetItemSet(championId, itemSetData);
+            result.ItemsImported = itemsSuccess;
+
+            result.Success = runesSuccess && spellsSuccess && itemsSuccess;
+            result.Message = result.Success 
+                ? $"✅ Build de {build.Name} importada ({build.WinRate}% WR)"
+                : $"⚠️ Importación parcial: Runas={runesSuccess}, Spells={spellsSuccess}, Items={itemsSuccess}";
+
+            Debug.WriteLine($"[Astra] Auto-import result: {result.Message}");
+        }
+        catch (Exception ex)
+        {
+            result.Success = false;
+            result.Message = $"❌ Error al importar: {ex.Message}";
+            Debug.WriteLine($"[Astra] Auto-import error: {ex.Message}");
+        }
+
+        return result;
+    }
+
+    /// <summary>
+    /// Get all available builds for a role
+    /// </summary>
+    public List<ChampionBuild> GetBuildsForRole(string role)
+    {
+        return ChampionBuildsService.GetBuildsForRole(role);
+    }
+
+    /// <summary>
+    /// Get build for a specific champion and role
+    /// </summary>
+    public ChampionBuild? GetBuildForChampion(int championId, string role)
+    {
+        return ChampionBuildsService.GetBuild(championId, role);
+    }
+
+    /// <summary>
+    /// Reset the auto-import tracker (for when leaving champ select)
+    /// </summary>
+    public void ResetAutoImportTracker()
+    {
+        _lastAutoImportedGameId = 0;
+    }
+
     public void Dispose()
     {
         if (_disposed) return;
@@ -959,3 +1117,18 @@ public class BuildItem
     public string IconUrl { get; set; } = "";
 }
 
+/// <summary>
+/// Result of auto-import operation
+/// </summary>
+public class AutoImportResult
+{
+    public bool Success { get; set; }
+    public string Message { get; set; } = "";
+    public int ChampionId { get; set; }
+    public string ChampionName { get; set; } = "";
+    public string Role { get; set; } = "";
+    public bool RunesImported { get; set; }
+    public bool SpellsImported { get; set; }
+    public bool ItemsImported { get; set; }
+    public ChampionBuild? Build { get; set; }
+}

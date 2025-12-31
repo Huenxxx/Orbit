@@ -1,10 +1,16 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import {
     Play, Square, Gamepad2, Info,
-    Sword, Star, Target, Crown, Download, RefreshCw, Wand2, Package
+    Sword, Star, Target, Crown, Download, Wand2, Package,
+    ChevronDown, ChevronUp, Zap, Shield, Users, Check, Loader2
 } from 'lucide-react';
 import { ipc } from '../../services/ipc';
 import './Astra.css';
+import {
+    getChampionsByRole, getChampionBuild, getTierColor, getRoleIcon, getRoleName,
+    KEYSTONES, RUNE_TREES, SUMMONER_SPELLS,
+    type ChampionBuild
+} from './championData';
 
 interface AstraStatus {
     serviceRunning: boolean;
@@ -48,38 +54,6 @@ interface ChampionRecommendation {
     tier: string;
     role: string;
 }
-
-// Static champion recommendations
-const CHAMPION_RECOMMENDATIONS: Record<string, ChampionRecommendation[]> = {
-    top: [
-        { id: 86, name: 'Garen', winRate: 52.8, tier: 'S', role: 'top' },
-        { id: 122, name: 'Darius', winRate: 51.5, tier: 'A', role: 'top' },
-        { id: 516, name: 'Ornn', winRate: 52.1, tier: 'S', role: 'top' },
-    ],
-    jungle: [
-        { id: 64, name: 'Lee Sin', winRate: 49.8, tier: 'A', role: 'jungle' },
-        { id: 254, name: 'Vi', winRate: 52.5, tier: 'S', role: 'jungle' },
-        { id: 427, name: 'Ivern', winRate: 53.2, tier: 'S', role: 'jungle' },
-    ],
-    middle: [
-        { id: 103, name: 'Ahri', winRate: 52.4, tier: 'S', role: 'middle' },
-        { id: 112, name: 'Viktor', winRate: 51.6, tier: 'A', role: 'middle' },
-        { id: 517, name: 'Sylas', winRate: 51.2, tier: 'A', role: 'middle' },
-    ],
-    bottom: [
-        { id: 51, name: 'Caitlyn', winRate: 51.8, tier: 'A', role: 'bottom' },
-        { id: 222, name: 'Jinx', winRate: 52.1, tier: 'S', role: 'bottom' },
-        { id: 145, name: "Kai'Sa", winRate: 50.5, tier: 'A', role: 'bottom' },
-    ],
-    utility: [
-        { id: 412, name: 'Thresh', winRate: 50.2, tier: 'A', role: 'utility' },
-        { id: 117, name: 'Lulu', winRate: 52.8, tier: 'S', role: 'utility' },
-        { id: 350, name: 'Yuumi', winRate: 49.2, tier: 'B', role: 'utility' },
-    ],
-};
-
-// Rune Pages Data
-
 
 // Spells Data
 const SPELLS = {
@@ -159,46 +133,7 @@ const RUNE_PAGES = [
     }
 ];
 
-// Champion Default Roles (Fallback)
-const CHAMPION_DEFAULT_ROLES: Record<string, string> = {
-    "233": "jungle", "64": "jungle", "157": "middle", "222": "bottom", "86": "top", "103": "middle",
-    "24": "top", "58": "top", "114": "top", // Jax, Renekton, Fiora
-    "203": "jungle", "9": "jungle", "234": "jungle", // Kindred, Fiddle, Viego
-    "134": "middle", "61": "middle", "136": "middle", "42": "middle", // Syndra, Orianna, Sol, Corki
-    "81": "bottom", "145": "bottom", "901": "bottom", // Ezreal, Kai'Sa, Smolder
-    "412": "utility", "63": "utility" // Thresh, Brand
-};
 
-// Rich Item Sets (S14 Class-Based + Specific Champs)
-const ITEM_SETS: Record<string, any> = {
-    // --- Clases Genéricas ---
-    fighter: { title: "Orbit Fighter S14", blocks: [{ type: "Starter", items: [{ id: "1055", count: 1 }] }, { type: "Core", items: [{ id: "6692", count: 1 }, { id: "6610", count: 1 }, { id: "3071", count: 1 }] }] },
-    mage: { title: "Orbit Mage S14", blocks: [{ type: "Starter", items: [{ id: "1056", count: 1 }] }, { type: "Core", items: [{ id: "3028", count: 1 }, { id: "4645", count: 1 }, { id: "3157", count: 1 }] }] },
-    marksman: { title: "Orbit ADC S14", blocks: [{ type: "Starter", items: [{ id: "1055", count: 1 }] }, { type: "Core", items: [{ id: "6672", count: 1 }, { id: "3031", count: 1 }, { id: "3036", count: 1 }] }] },
-    assassin: { title: "Orbit Assassin S14", blocks: [{ type: "Starter", items: [{ id: "1055", count: 1 }] }, { type: "Core", items: [{ id: "3142", count: 1 }, { id: "6690", count: 1 }, { id: "3814", count: 1 }] }] },
-    tank: { title: "Orbit Tank S14", blocks: [{ type: "Starter", items: [{ id: "1054", count: 1 }] }, { type: "Core", items: [{ id: "3084", count: 1 }, { id: "3068", count: 1 }, { id: "3075", count: 1 }] }] },
-    support: { title: "Orbit Support S14", blocks: [{ type: "Starter", items: [{ id: "3865", count: 1 }] }, { type: "Core", items: [{ id: "6616", count: 1 }, { id: "3107", count: 1 }, { id: "3190", count: 1 }] }] },
-
-    // --- Specific Champions ---
-    "24": { title: "Jax Grandmaster", blocks: [{ type: "Starter", items: [{ id: "1055", count: 1 }] }, { type: "Core", items: [{ id: "3078", count: 1 }, { id: "3074", count: 1 }, { id: "6610", count: 1 }] }] }, // Trinity, Hydra, Sundered
-    "58": { title: "Renekton Domination", blocks: [{ type: "Starter", items: [{ id: "1055", count: 1 }] }, { type: "Core", items: [{ id: "6692", count: 1 }, { id: "6610", count: 1 }, { id: "3071", count: 1 }] }] }, // Eclipse, Sundered, Cleaver
-    "57": { title: "Maokai Tree", blocks: [{ type: "Starter", items: [{ id: "1054", count: 1 }] }, { type: "Core", items: [{ id: "6667", count: 1 }, { id: "3068", count: 1 }, { id: "3065", count: 1 }] }] }, // Unending Despair, Sunfire, Visage
-    "157": { title: "Yasuo Wind", blocks: [{ type: "Starter", items: [{ id: "1055", count: 1 }] }, { type: "Core", items: [{ id: "6672", count: 1 }, { id: "3031", count: 1 }, { id: "3072", count: 1 }] }] },
-    "136": { title: "Asol Starforger", blocks: [{ type: "Starter", items: [{ id: "1056", count: 1 }] }, { type: "Core", items: [{ id: "3116", count: 1 }, { id: "4645", count: 1 }, { id: "3089", count: 1 }] }] }, // Rylai, Shadowflame/Liandry (Blackfire Torch 666?. using Rylai for now)
-    "81": { title: "Ezreal Skillshot", blocks: [{ type: "Starter", items: [{ id: "1055", count: 1 }] }, { type: "Core", items: [{ id: "3078", count: 1 }, { id: "3042", count: 1 }, { id: "3115", count: 1 }] }] }, // Trinity, Muramana, Shojin
-    "145": { title: "Kai'Sa Void", blocks: [{ type: "Starter", items: [{ id: "1055", count: 1 }] }, { type: "Core", items: [{ id: "3124", count: 1 }, { id: "3302", count: 1 }, { id: "3091", count: 1 }] }] }, // Rageblade, Terminus, Wits End
-    "412": { title: "Thresh Hook", blocks: [{ type: "Starter", items: [{ id: "3865", count: 1 }] }, { type: "Core", items: [{ id: "3190", count: 1 }, { id: "3109", count: 1 }, { id: "3107", count: 1 }] }] }, // Locket, Knight's Vow, Redemption
-
-    // Briar (233)
-    "233": {
-        title: "Briar Frenzy (Meta S14)",
-        blocks: [
-            { type: "Starter", items: [{ id: "1055", count: 1 }] }, // Doran Blade (Safe)
-            { type: "Core", items: [{ id: "6692", count: 1 }, { id: "6610", count: 1 }, { id: "3071", count: 1 }] } // Eclipse, Sundered Sky, Cleaver
-        ]
-    }
-    // Add more ID-based overrides here
-};
 
 export function Astra() {
     const [status, setStatus] = useState<AstraStatus>({
@@ -210,6 +145,16 @@ export function Astra() {
     const [isLoading, setIsLoading] = useState(false);
     const [message, setMessage] = useState('');
     const [autoImportedGameId, setAutoImportedGameId] = useState<number | null>(null);
+    const [selectedRole, setSelectedRole] = useState<string>('top');
+    const [expandedChampion, setExpandedChampion] = useState<number | null>(null);
+    const [showBuildsSection, setShowBuildsSection] = useState(true);
+
+    // New states for detected champion and build options
+    const [detectedChampion, setDetectedChampion] = useState<ChampionBuild | null>(null);
+    const [detectedRole, setDetectedRole] = useState<string>('');
+    const [availableBuilds, setAvailableBuilds] = useState<ChampionBuild[]>([]);
+    const [importedBuildId, setImportedBuildId] = useState<number | null>(null);
+    const [autoImportEnabled, setAutoImportEnabled] = useState(true);
 
     const pollInterval = useRef<ReturnType<typeof setInterval> | null>(null);
 
@@ -229,7 +174,10 @@ export function Astra() {
                         if (rankedResult) setRanked(rankedResult);
 
                         const champSelectResult = await ipc.astra.getChampSelect();
-                        if (champSelectResult) setChampSelect(champSelectResult);
+                        if (champSelectResult) {
+                            console.log('[Astra Poll] ChampSelect:', JSON.stringify(champSelectResult));
+                            setChampSelect(champSelectResult);
+                        }
                     } else {
                         setSummoner(null); setRanked(null); setChampSelect(null);
                     }
@@ -244,84 +192,194 @@ export function Astra() {
         return () => { if (pollInterval.current) clearInterval(pollInterval.current); };
     }, []);
 
-    // Auto Import Logic
+    // Track last imported champion to detect changes
+    const lastImportedChampRef = useRef<{ gameId: number | null; championId: number | null }>({
+        gameId: null,
+        championId: null
+    });
+
+    // Auto Import Logic - Using C# Backend
     useEffect(() => {
         const performAutoImport = async () => {
-            if (champSelect?.isInChampSelect && champSelect.championId && champSelect.championId > 0 && champSelect.gameId) {
-                // If we haven't imported for this game yet
-                if (autoImportedGameId !== champSelect.gameId) {
-                    setAutoImportedGameId(champSelect.gameId);
-                    const championId = champSelect.championId?.toString() || "";
-                    let roleStr = champSelect.assignedPosition?.toLowerCase() || '';
-                    let championRoles: string[] = []; // To store champion class tags
+            // Only run if service is connected and we're in champ select
+            if (!status.serviceRunning || !status.clientConnected) {
+                console.log('[Astra] Service not running or not connected');
+                return;
+            }
 
-                    // If role is missing (Practice Tool/Blind Pick), try to infer from champion
-                    if (!roleStr || roleStr === 'none') {
-                        // 1. Static Override
-                        roleStr = CHAMPION_DEFAULT_ROLES[championId] || '';
+            if (champSelect?.isInChampSelect) {
+                let roleStr = champSelect.assignedPosition?.toLowerCase() || '';
 
-                        // 2. Dynamic LCU Fetch + Class Detection
-                        if (!roleStr) {
-                            try {
-                                const roles = await ipc.astra.getChampionRoles(Number(championId));
-                                if (roles && roles.length > 0) {
-                                    // Store roles for build selection
-                                    championRoles = roles.map(r => r.toLowerCase());
+                // Normalize role names
+                if (roleStr === 'adc') roleStr = 'bottom';
+                if (roleStr === 'support') roleStr = 'utility';
+                if (roleStr === 'mid') roleStr = 'middle';
+                if (!roleStr || roleStr === 'none') roleStr = 'middle';
 
-                                    // Derive basic roleStr for UI
-                                    const tag = championRoles[0];
-                                    if (tag === 'marksman') roleStr = 'bottom';
-                                    else if (tag === 'support') roleStr = 'utility';
-                                    else if (tag === 'mage' || tag === 'assassin') roleStr = 'middle';
-                                    else if (tag === 'fighter' || tag === 'tank') roleStr = 'top';
-                                    else if (tag === 'jungle') roleStr = 'jungle';
-                                }
-                            } catch (e) {
-                                console.error("Error fetching roles", e);
-                            }
-                        }
+                setDetectedRole(roleStr);
+                setSelectedRole(roleStr);
 
-                        // 3. Ultimate Fallback
-                        if (!roleStr) roleStr = 'middle';
+                // Fetch builds for the detected role from C# backend
+                try {
+                    const roleBuildsFromBackend = await ipc.astra.getBuildsForRole(roleStr);
+                    if (roleBuildsFromBackend && roleBuildsFromBackend.length > 0) {
+                        // Map to our ChampionBuild type
+                        const mappedBuilds: ChampionBuild[] = roleBuildsFromBackend.map(b => ({
+                            championId: b.championId,
+                            name: b.name,
+                            role: b.role,
+                            tier: b.tier as 'S' | 'A' | 'B' | 'C',
+                            winRate: b.winRate,
+                            pickRate: b.pickRate,
+                            banRate: b.banRate,
+                            primaryTree: b.primaryTree,
+                            secondaryTree: b.secondaryTree,
+                            keystone: b.keystone,
+                            primaryRunes: b.primaryRunes,
+                            secondaryRunes: b.secondaryRunes,
+                            statShards: b.statShards,
+                            spell1: b.spell1,
+                            spell2: b.spell2,
+                            starterItems: b.starterItems,
+                            coreItems: b.coreItems,
+                            situationalItems: b.situationalItems,
+                            boots: b.boots,
+                            skillOrder: b.skillOrder,
+                            playstyle: b.playstyle
+                        }));
+                        setAvailableBuilds(mappedBuilds);
+                    } else {
+                        // Fallback to local data
+                        setAvailableBuilds(getChampionsByRole(roleStr));
                     }
-
-                    const role = roleStr as keyof typeof SPELLS;
-                    setMessage(`Champion detectado (ID: ${championId}, Rol: ${role})! Auto-importando config...`);
-
-                    // 1. Runes based on Tags/Class
-                    let bestPage = RUNE_PAGES[0]; // Default Conqueror
-                    if (championRoles.length > 0) {
-                        // Find first page that matches any of the champion's tags
-                        bestPage = RUNE_PAGES.find(p => p.tags.some(t => championRoles.includes(t))) || RUNE_PAGES[0];
-                    }
-                    await ipc.astra.importRunes(bestPage.name, bestPage.primaryStyleId, bestPage.subStyleId, bestPage.perkIds);
-
-                    // 2. Spells based on Role (Position)
-                    const spells = SPELLS[role] || SPELLS['middle'];
-                    await ipc.astra.importSpells(spells.spell1Id, spells.spell2Id);
-
-                    // 3. Item Set (Specific Champ > Class Tag > Position > Fallback)
-                    let itemSet = ITEM_SETS[championId];
-                    if (!itemSet && championRoles.length > 0) {
-                        // Try to find a set for the primary class (e.g. 'fighter', 'mage')
-                        const primaryClass = championRoles[0];
-                        itemSet = ITEM_SETS[primaryClass];
-                    }
-                    if (!itemSet) itemSet = ITEM_SETS['fighter']; // Safe fallack
-
-                    await ipc.astra.importItems(champSelect.championId, itemSet);
-
-                    setMessage('Configuración (Runas, Spells, Items) importada automáticamente!');
-                    setTimeout(() => setMessage(''), 5000);
+                } catch (e) {
+                    console.error("Error fetching builds from backend:", e);
+                    setAvailableBuilds(getChampionsByRole(roleStr));
                 }
-            } else if (!champSelect?.isInChampSelect) {
+
+                // When champion is selected, auto-import
+                const currentChampionId = champSelect.championId;
+                const currentGameId = champSelect.gameId;
+
+                console.log(`[Astra] ChampSelect - ChampionId: ${currentChampionId}, GameId: ${currentGameId}, Role: ${roleStr}`);
+
+                if (currentChampionId && currentChampionId > 0) {
+                    // Find the build for this champion
+                    let championBuild = getChampionBuild(currentChampionId, roleStr);
+
+                    // If no specific build, get from available builds or use first of role
+                    if (!championBuild) {
+                        const roleBuilds = getChampionsByRole(roleStr);
+                        championBuild = roleBuilds.find(b => b.championId === currentChampionId) || roleBuilds[0];
+                    }
+
+                    setDetectedChampion(championBuild || null);
+
+                    // Check if we need to import:
+                    // - Different game session OR
+                    // - Different champion selected (user changed pick)
+                    const needsImport = autoImportEnabled && (
+                        lastImportedChampRef.current.gameId !== currentGameId ||
+                        lastImportedChampRef.current.championId !== currentChampionId
+                    );
+
+                    console.log(`[Astra] NeedsImport: ${needsImport}, LastGame: ${lastImportedChampRef.current.gameId}, LastChamp: ${lastImportedChampRef.current.championId}`);
+
+                    if (needsImport && championBuild) {
+                        // Update the ref BEFORE importing to prevent race conditions
+                        lastImportedChampRef.current = { gameId: currentGameId ?? null, championId: currentChampionId };
+                        setImportedBuildId(championBuild.championId);
+                        setAutoImportedGameId(currentGameId ?? null);
+
+                        setMessage(`🎮 ${championBuild.name} (${getRoleName(roleStr)}) - Auto-importando...`);
+                        console.log(`[Astra] Importing build for ${championBuild.name}...`);
+
+                        try {
+                            // 1. IMPORT RUNES - Always
+                            const runeName = `Orbit: ${championBuild.name}`;
+                            const allPerkIds = [
+                                championBuild.keystone,
+                                ...championBuild.primaryRunes,
+                                ...championBuild.secondaryRunes,
+                                ...championBuild.statShards
+                            ];
+                            const runesResult = await ipc.astra.importRunes(
+                                runeName,
+                                championBuild.primaryTree,
+                                championBuild.secondaryTree,
+                                allPerkIds
+                            );
+                            console.log('[Astra] Runes import result:', runesResult);
+
+                            // 2. IMPORT SPELLS - Always
+                            const spellsResult = await ipc.astra.importSpells(
+                                championBuild.spell1,
+                                championBuild.spell2
+                            );
+                            console.log('[Astra] Spells import result:', spellsResult);
+
+                            // 3. IMPORT ITEMS - Always
+                            const itemSet = {
+                                title: `Orbit: ${championBuild.name}`,
+                                blocks: [
+                                    {
+                                        type: "Starter",
+                                        items: championBuild.starterItems.map(id => ({ id: id.toString(), count: 1 }))
+                                    },
+                                    {
+                                        type: "Core Build",
+                                        items: championBuild.coreItems.map(id => ({ id: id.toString(), count: 1 }))
+                                    },
+                                    {
+                                        type: "Situacional",
+                                        items: championBuild.situationalItems.map(id => ({ id: id.toString(), count: 1 }))
+                                    },
+                                    {
+                                        type: "Botas",
+                                        items: [{ id: championBuild.boots.toString(), count: 1 }]
+                                    },
+                                ]
+                            };
+                            const itemsResult = await ipc.astra.importItems(currentChampionId, itemSet);
+                            console.log('[Astra] Items import result:', itemsResult);
+
+                            setMessage(`✅ ${championBuild.name} - Runas, Spells e Items importados (${championBuild.winRate}% WR)`);
+                            setTimeout(() => setMessage(''), 6000);
+
+                        } catch (error: any) {
+                            console.error("[Astra] Error importing build:", error);
+                            setMessage(`❌ Error: ${error.message}`);
+                        }
+                    } else if (needsImport && !championBuild) {
+                        // No build found at all, use generic role-based import
+                        lastImportedChampRef.current = { gameId: currentGameId ?? null, championId: currentChampionId };
+                        setMessage(`⚠️ Sin build para este campeón. Importando spells de ${getRoleName(roleStr)}...`);
+
+                        try {
+                            // Generic spells by role
+                            const spells = SPELLS[roleStr as keyof typeof SPELLS] || SPELLS['middle'];
+                            await ipc.astra.importSpells(spells.spell1Id, spells.spell2Id);
+                            setMessage(`✅ Spells de ${getRoleName(roleStr)} importados`);
+                        } catch (e) {
+                            console.error("Error importing fallback:", e);
+                        }
+                    }
+                }
+            } else {
                 // Reset when leaving champ select
-                if (autoImportedGameId !== null) setAutoImportedGameId(null);
+                if (lastImportedChampRef.current.gameId !== null) {
+                    console.log('[Astra] Leaving champ select, resetting state');
+                    lastImportedChampRef.current = { gameId: null, championId: null };
+                    setAutoImportedGameId(null);
+                    setDetectedChampion(null);
+                    setDetectedRole('');
+                    setImportedBuildId(null);
+                }
             }
         };
 
         performAutoImport();
-    }, [champSelect, autoImportedGameId]);
+    }, [champSelect, autoImportEnabled, status.serviceRunning, status.clientConnected]);
 
     const handleStartService = useCallback(async () => {
         setIsLoading(true);
@@ -359,10 +417,7 @@ export function Astra() {
         finally { setIsLoading(false); }
     };
 
-    const getPositionRecommendations = () => {
-        if (!champSelect?.assignedPosition) return [];
-        return CHAMPION_RECOMMENDATIONS[champSelect.assignedPosition] || [];
-    };
+
 
     const getRankColor = (tier: string) => {
         const colors: Record<string, string> = {
@@ -373,9 +428,54 @@ export function Astra() {
         return colors[tier] || '#6b7280';
     };
 
-    const getTierColor = (tier: string) => {
-        switch (tier) {
-            case 'S': return '#ffd700'; case 'A': return '#22c55e'; case 'B': return '#3b82f6'; default: return '#6b7280';
+
+    // Helper function to get spell name for CDN URLs
+    const getSpellName = (spellId: number): string => {
+        const spellNames: Record<number, string> = {
+            1: 'boost', // Cleanse
+            3: 'exhaust',
+            4: 'flash',
+            6: 'haste', // Ghost
+            7: 'heal',
+            11: 'smite',
+            12: 'teleport',
+            14: 'ignite', // Actually "Dot" in some CDNs
+            21: 'barrier',
+        };
+        return spellNames[spellId] || 'flash';
+    };
+
+    // Import champion build to the LoL client
+    const handleImportChampionBuild = async (build: ChampionBuild) => {
+        setIsLoading(true);
+        try {
+            // Import Runes
+            const runeName = `Orbit: ${build.name} ${build.role.toUpperCase()}`;
+            const allPerkIds = [build.keystone, ...build.primaryRunes, ...build.secondaryRunes, ...build.statShards];
+            await ipc.astra.importRunes(runeName, build.primaryTree, build.secondaryTree, allPerkIds);
+
+            // Import Spells
+            await ipc.astra.importSpells(build.spell1, build.spell2);
+
+            // Import Items
+            const itemSet = {
+                title: `Orbit: ${build.name}`,
+                blocks: [
+                    { type: "Starter", items: build.starterItems.map(id => ({ id, count: 1 })) },
+                    { type: "Core Build", items: build.coreItems.map(id => ({ id, count: 1 })) },
+                    { type: "Situacional", items: build.situationalItems.map(id => ({ id, count: 1 })) },
+                    { type: "Botas", items: [{ id: build.boots, count: 1 }] },
+                ]
+            };
+            await ipc.astra.importItems(build.championId, itemSet);
+
+            setMessage(`✅ Build de ${build.name} importada: Runas, Spells e Items!`);
+            setTimeout(() => setMessage(''), 5000);
+        } catch (error: any) {
+            console.error('Error importing build:', error);
+            setMessage(`❌ Error al importar build: ${error.message || 'Error desconocido'}`);
+        } finally {
+            setIsLoading(false);
         }
     };
 
@@ -430,45 +530,152 @@ export function Astra() {
                     </div>
                 )}
 
-                {/* --- CHAMP SELECT & DRAFT ANALYSIS --- */}
+                {/* --- CHAMP SELECT & DETECTED BUILD --- */}
                 {champSelect?.isInChampSelect && (
                     <div className="champ-select-section">
                         <div className="section-header">
                             <Gamepad2 size={24} />
                             <span>
-                                {champSelect.championId ? 'Campeón Seleccionado (Auto-Config Activo)' : 'Seleccionando Campeón'}
+                                {champSelect.championId ? '🎮 Campeón Detectado - Auto-Import Activo' : 'Seleccionando Campeón...'}
                             </span>
                             <span className="position-badge">{champSelect.assignedPosition?.toUpperCase() || 'FILL'}</span>
                         </div>
 
-                        {!champSelect.championId ? (
-                            <div className="champion-recommendations">
-                                <h3 className="subsection-title">
-                                    <Star size={16} />
-                                    <span>Recomendaciones para {champSelect.assignedPosition || 'tu rol'}</span>
-                                </h3>
-                                <div className="champions-grid">
-                                    {getPositionRecommendations().map((champ) => (
-                                        <div key={champ.id} className="champion-card">
-                                            <div className="champion-info">
-                                                <span className="champion-name">{champ.name}</span>
-                                                <span className="champion-winrate" style={{ color: '#22c55e' }}>{champ.winRate}% WR</span>
-                                            </div>
-                                            <span className="tier-badge" style={{ backgroundColor: getTierColor(champ.tier) }}>{champ.tier}</span>
+                        {/* Auto Import Toggle */}
+                        <div className="auto-import-toggle">
+                            <label className="toggle-container">
+                                <input
+                                    type="checkbox"
+                                    checked={autoImportEnabled}
+                                    onChange={(e) => setAutoImportEnabled(e.target.checked)}
+                                />
+                                <span className="toggle-slider"></span>
+                                <span className="toggle-label">Auto-Import Builds</span>
+                            </label>
+                        </div>
+
+                        {/* Detected Champion Info */}
+                        {detectedChampion && champSelect.championId ? (
+                            <div className="detected-champion-section">
+                                <div className="detected-champion-card">
+                                    <img
+                                        src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${champSelect.championId}.png`}
+                                        alt={detectedChampion.name}
+                                        className="detected-champion-icon"
+                                        onError={(e) => { e.currentTarget.src = 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/-1.png'; }}
+                                    />
+                                    <div className="detected-champion-info">
+                                        <h3 className="detected-champion-name">{detectedChampion.name}</h3>
+                                        <div className="detected-champion-stats">
+                                            <span className="tier-badge" style={{ backgroundColor: getTierColor(detectedChampion.tier) }}>
+                                                {detectedChampion.tier} Tier
+                                            </span>
+                                            <span className="winrate-badge">{detectedChampion.winRate}% WR</span>
+                                            <span className="role-badge">{getRoleIcon(detectedRole)} {getRoleName(detectedRole)}</span>
                                         </div>
-                                    ))}
+                                        {importedBuildId === detectedChampion.championId && (
+                                            <div className="imported-badge">
+                                                <Check size={14} /> Build Importada
+                                            </div>
+                                        )}
+                                    </div>
+                                </div>
+
+                                {/* Quick Display of Imported Config */}
+                                <div className="imported-config-summary">
+                                    <div className="config-item">
+                                        <Target size={14} />
+                                        <span>{KEYSTONES[detectedChampion.keystone]?.name || 'Keystone'}</span>
+                                    </div>
+                                    <div className="config-item">
+                                        <Wand2 size={14} />
+                                        <span>{SUMMONER_SPELLS[detectedChampion.spell1]?.name} + {SUMMONER_SPELLS[detectedChampion.spell2]?.name}</span>
+                                    </div>
+                                    <div className="config-item">
+                                        <Package size={14} />
+                                        <span>{detectedChampion.coreItems.length} items en build</span>
+                                    </div>
+                                </div>
+
+                                {/* Playstyle Tip */}
+                                <div className="playstyle-tip">
+                                    <Info size={14} />
+                                    <span>{detectedChampion.playstyle}</span>
                                 </div>
                             </div>
+                        ) : champSelect.championId ? (
+                            <div className="no-build-warning">
+                                <Info size={20} />
+                                <span>Sin build específica para este campeón. Usando configuración por defecto del rol.</span>
+                            </div>
                         ) : (
-                            <div className="matchup-analysis">
-                                <div className="analysis-card">
-                                    <h3 className="subsection-title">
-                                        <RefreshCw size={16} />
-                                        <span>Análisis del Matchup</span>
-                                    </h3>
-                                    <p className="analysis-text">
-                                        Runas, Hechizos e Items se han configurado automáticamente para maximizar winrate.
-                                    </p>
+                            <div className="waiting-champion-section">
+                                <div className="waiting-header">
+                                    <Loader2 size={24} className="spin" />
+                                    <span>Esperando selección de campeón...</span>
+                                </div>
+
+                                {/* Show recommended champions for the role while waiting */}
+                                {availableBuilds.length > 0 && detectedRole && (
+                                    <div className="role-recommendations">
+                                        <h4 className="recommendations-title">
+                                            <Crown size={16} />
+                                            Campeones recomendados para {getRoleName(detectedRole)} (mayor Win Rate):
+                                        </h4>
+                                        <div className="recommendations-grid">
+                                            {availableBuilds.slice(0, 6).map((build) => (
+                                                <div key={build.championId} className="recommended-champion-card">
+                                                    <img
+                                                        src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${build.championId}.png`}
+                                                        alt={build.name}
+                                                        className="recommended-icon"
+                                                    />
+                                                    <div className="recommended-info">
+                                                        <span className="recommended-name">{build.name}</span>
+                                                        <div className="recommended-stats">
+                                                            <span className="tier-mini" style={{ backgroundColor: getTierColor(build.tier) }}>
+                                                                {build.tier}
+                                                            </span>
+                                                            <span className="recommended-wr">{build.winRate}%</span>
+                                                        </div>
+                                                    </div>
+                                                </div>
+                                            ))}
+                                        </div>
+                                        <p className="recommendation-note">
+                                            💡 Al seleccionar un campeón, se importarán automáticamente sus runas, spells e items.
+                                        </p>
+                                    </div>
+                                )}
+                            </div>
+                        )}
+
+                        {/* Alternative Builds from same role - Only show when champion IS selected */}
+                        {availableBuilds.length > 0 && detectedRole && champSelect.championId && champSelect.championId > 0 && (
+                            <div className="alternative-builds">
+                                <h4 className="alternatives-title">
+                                    <Star size={16} />
+                                    Otras Builds de {getRoleName(detectedRole)} (Click para importar)
+                                </h4>
+                                <div className="alternatives-grid">
+                                    {availableBuilds.filter(b => b.championId !== champSelect.championId).slice(0, 5).map((build) => (
+                                        <div
+                                            key={build.championId}
+                                            className={`alternative-build-card ${importedBuildId === build.championId ? 'imported' : ''}`}
+                                            onClick={() => handleImportChampionBuild(build)}
+                                        >
+                                            <img
+                                                src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${build.championId}.png`}
+                                                alt={build.name}
+                                                className="alt-champ-icon"
+                                            />
+                                            <div className="alt-build-info">
+                                                <span className="alt-champ-name">{build.name}</span>
+                                                <span className="alt-winrate">{build.winRate}% WR</span>
+                                            </div>
+                                            <span className="tier-mini" style={{ backgroundColor: getTierColor(build.tier) }}>{build.tier}</span>
+                                        </div>
+                                    ))}
                                 </div>
                             </div>
                         )}
@@ -530,6 +737,165 @@ export function Astra() {
                             <Info size={20} /> <span>Selecciona un campeón para auto-importar configuración.</span>
                         </div>
                     ) : null
+                )}
+
+                {/* --- CHAMPION BUILDS BY ROLE SECTION --- */}
+                {showBuildsSection && (
+                    <div className="builds-by-role-section">
+                        <div className="section-header clickable" onClick={() => setShowBuildsSection(!showBuildsSection)}>
+                            <Users size={24} />
+                            <span>Builds por Rol (Meta S14/S15)</span>
+                            {showBuildsSection ? <ChevronUp size={20} /> : <ChevronDown size={20} />}
+                        </div>
+
+                        {/* Role Tabs */}
+                        <div className="role-tabs">
+                            {['top', 'jungle', 'middle', 'bottom', 'utility'].map(role => (
+                                <button
+                                    key={role}
+                                    className={`role-tab ${selectedRole === role ? 'active' : ''}`}
+                                    onClick={() => { setSelectedRole(role); setExpandedChampion(null); }}
+                                >
+                                    <span className="role-icon">{getRoleIcon(role)}</span>
+                                    <span className="role-name">{getRoleName(role)}</span>
+                                </button>
+                            ))}
+                        </div>
+
+                        {/* Champions Grid */}
+                        <div className="champions-builds-grid">
+                            {getChampionsByRole(selectedRole).map((champ: ChampionBuild) => (
+                                <div
+                                    key={champ.championId}
+                                    className={`champion-build-card ${expandedChampion === champ.championId ? 'expanded' : ''}`}
+                                    onClick={() => setExpandedChampion(expandedChampion === champ.championId ? null : champ.championId)}
+                                >
+                                    <div className="champion-build-header">
+                                        <div className="champion-identity">
+                                            <img
+                                                src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/${champ.championId}.png`}
+                                                alt={champ.name}
+                                                className="champion-icon-img"
+                                                onError={(e) => { e.currentTarget.src = 'https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/v1/champion-icons/-1.png'; }}
+                                            />
+                                            <div className="champion-name-tier">
+                                                <span className="champ-name">{champ.name}</span>
+                                                <span className="tier-badge" style={{ backgroundColor: getTierColor(champ.tier) }}>
+                                                    {champ.tier} Tier
+                                                </span>
+                                            </div>
+                                        </div>
+                                        <div className="champion-stats">
+                                            <div className="stat-item winrate">
+                                                <Zap size={14} />
+                                                <span>{champ.winRate}% WR</span>
+                                            </div>
+                                            <div className="stat-item pickrate">
+                                                <Target size={14} />
+                                                <span>{champ.pickRate}% Pick</span>
+                                            </div>
+                                        </div>
+                                    </div>
+
+                                    {/* Expanded Details */}
+                                    {expandedChampion === champ.championId && (
+                                        <div className="champion-build-details">
+                                            {/* Summoner Spells */}
+                                            <div className="build-section spells-section">
+                                                <h4><Wand2 size={16} /> Hechizos de Invocador</h4>
+                                                <div className="spells-display">
+                                                    <div className="spell-item">
+                                                        <img
+                                                            src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/data/spells/icons2d/summoner_${getSpellName(champ.spell1)}.png`}
+                                                            alt={SUMMONER_SPELLS[champ.spell1]?.name || 'Spell'}
+                                                            className="spell-icon-img"
+                                                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                                        />
+                                                        <span>{SUMMONER_SPELLS[champ.spell1]?.icon} {SUMMONER_SPELLS[champ.spell1]?.name}</span>
+                                                    </div>
+                                                    <span className="spell-separator">+</span>
+                                                    <div className="spell-item">
+                                                        <img
+                                                            src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/data/spells/icons2d/summoner_${getSpellName(champ.spell2)}.png`}
+                                                            alt={SUMMONER_SPELLS[champ.spell2]?.name || 'Spell'}
+                                                            className="spell-icon-img"
+                                                            onError={(e) => { e.currentTarget.style.display = 'none'; }}
+                                                        />
+                                                        <span>{SUMMONER_SPELLS[champ.spell2]?.icon} {SUMMONER_SPELLS[champ.spell2]?.name}</span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Runes */}
+                                            <div className="build-section runes-section">
+                                                <h4><Target size={16} /> Runas</h4>
+                                                <div className="runes-display">
+                                                    <div className="rune-tree primary-tree">
+                                                        <span className="tree-name" style={{ color: RUNE_TREES[champ.primaryTree]?.color }}>
+                                                            {RUNE_TREES[champ.primaryTree]?.icon} {RUNE_TREES[champ.primaryTree]?.name}
+                                                        </span>
+                                                        <div className="keystone">
+                                                            <span className="keystone-icon">{KEYSTONES[champ.keystone]?.icon}</span>
+                                                            <span className="keystone-name">{KEYSTONES[champ.keystone]?.name}</span>
+                                                        </div>
+                                                    </div>
+                                                    <div className="rune-tree secondary-tree">
+                                                        <span className="tree-name" style={{ color: RUNE_TREES[champ.secondaryTree]?.color }}>
+                                                            {RUNE_TREES[champ.secondaryTree]?.icon} {RUNE_TREES[champ.secondaryTree]?.name}
+                                                        </span>
+                                                    </div>
+                                                </div>
+                                            </div>
+
+                                            {/* Items */}
+                                            <div className="build-section items-section">
+                                                <h4><Package size={16} /> Core Build</h4>
+                                                <div className="items-display">
+                                                    {champ.coreItems.map((itemId, idx) => (
+                                                        <div key={idx} className="item-slot">
+                                                            <img
+                                                                src={`https://raw.communitydragon.org/latest/plugins/rcp-be-lol-game-data/global/default/assets/items/icons2d/${itemId}_class_t1_itemicon_2d.png`}
+                                                                alt={`Item ${itemId}`}
+                                                                className="item-icon-img"
+                                                                onError={(e) => {
+                                                                    e.currentTarget.src = `https://ddragon.leagueoflegends.com/cdn/14.24.1/img/item/${itemId}.png`;
+                                                                }}
+                                                            />
+                                                        </div>
+                                                    ))}
+                                                </div>
+                                            </div>
+
+                                            {/* Skill Order */}
+                                            <div className="build-section skills-section">
+                                                <h4><Star size={16} /> Orden de Habilidades</h4>
+                                                <div className="skill-order">{champ.skillOrder}</div>
+                                            </div>
+
+                                            {/* Playstyle */}
+                                            <div className="build-section playstyle-section">
+                                                <h4><Shield size={16} /> Estilo de Juego</h4>
+                                                <p className="playstyle-text">{champ.playstyle}</p>
+                                            </div>
+
+                                            {/* Import Button */}
+                                            <button
+                                                className="import-build-btn"
+                                                onClick={(e) => {
+                                                    e.stopPropagation();
+                                                    handleImportChampionBuild(champ);
+                                                }}
+                                                disabled={isLoading || !status.clientConnected}
+                                            >
+                                                <Download size={16} />
+                                                <span>Importar Build al Cliente</span>
+                                            </button>
+                                        </div>
+                                    )}
+                                </div>
+                            ))}
+                        </div>
+                    </div>
                 )}
 
                 {/* Control Panel */}

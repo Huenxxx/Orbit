@@ -420,25 +420,24 @@ public partial class MainWindow : Window
 
                 // Get champ select session
                 case "astra-get-champ-select":
-                    Services.ChampSelectSession? champSelect = null;
-                    await this.Dispatcher.InvokeAsync(async () => {
-                        if (_astraOverlay?.LeagueService != null)
-                        {
-                            champSelect = await _astraOverlay.LeagueService.GetChampSelectSession();
-                        }
-                    });
+                    Services.ChampSelectSession? champSelectSession = null;
+                    if (_astraOverlay?.LeagueService != null)
+                    {
+                        champSelectSession = await _astraOverlay.LeagueService.GetChampSelectSession();
+                        System.Diagnostics.Debug.WriteLine($"[IPC] ChampSelect result: {(champSelectSession != null ? $"ChampionId={champSelectSession.ChampionId}, Position={champSelectSession.AssignedPosition}" : "null")}");
+                    }
                     
-                    if (champSelect != null)
+                    if (champSelectSession != null)
                     {
                         result = new {
-                            gameId = champSelect.GameId,
+                            gameId = champSelectSession.GameId,
                             isInChampSelect = true,
-                            assignedPosition = champSelect.AssignedPosition,
-                            championId = champSelect.ChampionId,
-                            phase = champSelect.Phase,
-                            timeRemaining = champSelect.TimeRemaining,
-                            myTeamBans = champSelect.MyTeamBans,
-                            enemyTeamBans = champSelect.EnemyTeamBans
+                            assignedPosition = champSelectSession.AssignedPosition,
+                            championId = champSelectSession.ChampionId,
+                            phase = champSelectSession.Phase,
+                            timeRemaining = champSelectSession.TimeRemaining,
+                            myTeamBans = champSelectSession.MyTeamBans,
+                            enemyTeamBans = champSelectSession.EnemyTeamBans
                         };
                     }
                     else
@@ -548,6 +547,190 @@ public partial class MainWindow : Window
                         await Task.Delay(200);
                     }
                     result = new { success = itemsImported };
+                    break;
+
+                // ==========================================
+                // ASTRA BUILDS AUTO-IMPORT
+                // ==========================================
+                
+                // Get all builds for a role
+                case "astra-get-builds-for-role":
+                    string roleForBuilds = "middle";
+                    if (request.payload is JsonElement roleForBuildsEl && roleForBuildsEl.ValueKind == JsonValueKind.String)
+                    {
+                        roleForBuilds = roleForBuildsEl.GetString() ?? "middle";
+                    }
+                    
+                    var roleBuilds = ChampionBuildsService.GetBuildsForRole(roleForBuilds);
+                    result = roleBuilds.Select(b => new {
+                        championId = b.ChampionId,
+                        name = b.Name,
+                        role = b.Role,
+                        tier = b.Tier,
+                        winRate = b.WinRate,
+                        pickRate = b.PickRate,
+                        banRate = b.BanRate,
+                        primaryTree = b.PrimaryTree,
+                        secondaryTree = b.SecondaryTree,
+                        keystone = b.Keystone,
+                        primaryRunes = b.PrimaryRunes,
+                        secondaryRunes = b.SecondaryRunes,
+                        statShards = b.StatShards,
+                        spell1 = b.Spell1,
+                        spell2 = b.Spell2,
+                        starterItems = b.StarterItems,
+                        coreItems = b.CoreItems,
+                        situationalItems = b.SituationalItems,
+                        boots = b.Boots,
+                        skillOrder = b.SkillOrder,
+                        playstyle = b.Playstyle
+                    }).ToList();
+                    break;
+
+                // Get build for a specific champion
+                case "astra-get-champion-build":
+                    int buildChampId = 0;
+                    string buildRole = "middle";
+                    if (request.payload is JsonElement buildPayload && buildPayload.ValueKind == JsonValueKind.Object)
+                    {
+                        if (buildPayload.TryGetProperty("championId", out var champIdEl))
+                            buildChampId = champIdEl.GetInt32();
+                        if (buildPayload.TryGetProperty("role", out var buildRoleEl))
+                            buildRole = buildRoleEl.GetString() ?? "middle";
+                    }
+                    
+                    var champBuild = ChampionBuildsService.GetBuild(buildChampId, buildRole);
+                    if (champBuild != null)
+                    {
+                        result = new {
+                            championId = champBuild.ChampionId,
+                            name = champBuild.Name,
+                            role = champBuild.Role,
+                            tier = champBuild.Tier,
+                            winRate = champBuild.WinRate,
+                            pickRate = champBuild.PickRate,
+                            banRate = champBuild.BanRate,
+                            primaryTree = champBuild.PrimaryTree,
+                            secondaryTree = champBuild.SecondaryTree,
+                            keystone = champBuild.Keystone,
+                            primaryRunes = champBuild.PrimaryRunes,
+                            secondaryRunes = champBuild.SecondaryRunes,
+                            statShards = champBuild.StatShards,
+                            spell1 = champBuild.Spell1,
+                            spell2 = champBuild.Spell2,
+                            starterItems = champBuild.StarterItems,
+                            coreItems = champBuild.CoreItems,
+                            situationalItems = champBuild.SituationalItems,
+                            boots = champBuild.Boots,
+                            skillOrder = champBuild.SkillOrder,
+                            playstyle = champBuild.Playstyle
+                        };
+                    }
+                    break;
+
+                // Auto-import build for current champ select
+                case "astra-check-auto-import":
+                    AutoImportResult? autoImportResult = null;
+                    await this.Dispatcher.InvokeAsync(async () => {
+                        if (_astraOverlay?.LeagueService != null)
+                        {
+                            autoImportResult = await _astraOverlay.LeagueService.CheckAndAutoImportBuild();
+                        }
+                    });
+                    
+                    if (autoImportResult != null)
+                    {
+                        result = new {
+                            success = autoImportResult.Success,
+                            message = autoImportResult.Message,
+                            championId = autoImportResult.ChampionId,
+                            championName = autoImportResult.ChampionName,
+                            role = autoImportResult.Role,
+                            runesImported = autoImportResult.RunesImported,
+                            spellsImported = autoImportResult.SpellsImported,
+                            itemsImported = autoImportResult.ItemsImported,
+                            build = autoImportResult.Build != null ? new {
+                                name = autoImportResult.Build.Name,
+                                tier = autoImportResult.Build.Tier,
+                                winRate = autoImportResult.Build.WinRate
+                            } : null
+                        };
+                    }
+                    break;
+
+                // Import a specific build manually
+                case "astra-import-build":
+                    AutoImportResult? manualImportResult = null;
+                    if (request.payload is JsonElement importBuildPayload && importBuildPayload.ValueKind == JsonValueKind.Object)
+                    {
+                        int importChampId = importBuildPayload.GetProperty("championId").GetInt32();
+                        string importRole = importBuildPayload.TryGetProperty("role", out var importRoleEl) 
+                            ? importRoleEl.GetString() ?? "middle" 
+                            : "middle";
+                        
+                        var buildToImport = ChampionBuildsService.GetBuild(importChampId, importRole);
+                        if (buildToImport == null)
+                        {
+                            // Try getting any build for this champion
+                            var allBuilds = ChampionBuildsService.GetAllBuilds();
+                            buildToImport = allBuilds.FirstOrDefault(b => b.ChampionId == importChampId);
+                        }
+                        
+                        if (buildToImport != null)
+                        {
+                            await this.Dispatcher.InvokeAsync(async () => {
+                                if (_astraOverlay?.LeagueService != null)
+                                {
+                                    manualImportResult = await _astraOverlay.LeagueService.ImportBuild(importChampId, buildToImport);
+                                }
+                            });
+                        }
+                    }
+                    
+                    if (manualImportResult != null)
+                    {
+                        result = new {
+                            success = manualImportResult.Success,
+                            message = manualImportResult.Message,
+                            runesImported = manualImportResult.RunesImported,
+                            spellsImported = manualImportResult.SpellsImported,
+                            itemsImported = manualImportResult.ItemsImported
+                        };
+                    }
+                    else
+                    {
+                        result = new { success = false, message = "Build not found or service not running" };
+                    }
+                    break;
+
+                // Enable/Disable auto-import
+                case "astra-set-auto-import":
+                    bool autoImportEnabled = true;
+                    if (request.payload is JsonElement autoImportEl && autoImportEl.ValueKind == JsonValueKind.True || 
+                        request.payload is JsonElement autoImportEl2 && autoImportEl2.ValueKind == JsonValueKind.False)
+                    {
+                        autoImportEnabled = ((JsonElement)request.payload).GetBoolean();
+                    }
+                    
+                    this.Dispatcher.Invoke(() => {
+                        if (_astraOverlay?.LeagueService != null)
+                        {
+                            _astraOverlay.LeagueService.AutoImportEnabled = autoImportEnabled;
+                        }
+                    });
+                    result = new { success = true, autoImportEnabled = autoImportEnabled };
+                    break;
+
+                // Get auto-import status
+                case "astra-get-auto-import-status":
+                    bool currentAutoImportEnabled = true;
+                    this.Dispatcher.Invoke(() => {
+                        if (_astraOverlay?.LeagueService != null)
+                        {
+                            currentAutoImportEnabled = _astraOverlay.LeagueService.AutoImportEnabled;
+                        }
+                    });
+                    result = new { autoImportEnabled = currentAutoImportEnabled };
                     break;
 
                 // ==========================================
