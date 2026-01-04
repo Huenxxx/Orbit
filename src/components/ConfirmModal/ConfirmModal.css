@@ -1,0 +1,99 @@
+.confirm-modal-overlay {
+    position: fixed;
+    inset: 0;
+    background: rgba(5, 5, 8, 0.85);
+    backdrop-filter: blur(8px);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: var(--z-modal);
+    padding: var(--space-4);
+}
+
+.confirm-modal {
+    width: 100%;
+    max-width: 400px;
+    background: var(--color-nebula);
+    border: var(--border-light);
+    border-radius: var(--radius-xl);
+    box-shadow: var(--shadow-xl), 0 0 40px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+    display: flex;
+    flex-direction: column;
+}
+
+.confirm-modal-header {
+    display: flex;
+    justify-content: space-between;
+    align-items: flex-start;
+    padding: var(--space-6) var(--space-6) 0;
+}
+
+.icon-wrapper {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 48px;
+    height: 48px;
+    border-radius: var(--radius-full);
+}
+
+.icon-wrapper.warning {
+    background: rgba(245, 158, 11, 0.1);
+    color: var(--color-warning);
+}
+
+.icon-wrapper.danger {
+    background: rgba(239, 68, 68, 0.1);
+    color: var(--color-error);
+}
+
+.close-btn {
+    background: transparent;
+    border: none;
+    color: var(--text-tertiary);
+    cursor: pointer;
+    padding: var(--space-2);
+    border-radius: var(--radius-md);
+    transition: all var(--transition-fast);
+}
+
+.close-btn:hover {
+    background: rgba(255, 255, 255, 0.05);
+    color: var(--text-primary);
+}
+
+.confirm-modal-content {
+    padding: var(--space-4) var(--space-6);
+}
+
+.confirm-modal-content h3 {
+    font-size: var(--text-xl);
+    color: var(--text-primary);
+    margin-bottom: var(--space-2);
+}
+
+.confirm-modal-content p {
+    color: var(--text-secondary);
+    font-size: var(--text-sm);
+    line-height: 1.5;
+}
+
+.confirm-modal-actions {
+    padding: var(--space-4) var(--space-6) var(--space-6);
+    display: flex;
+    justify-content: flex-end;
+    gap: var(--space-3);
+    background: var(--color-cosmos);
+    margin-top: var(--space-2);
+}
+
+.btn-danger {
+    background: var(--color-error);
+    color: white;
+    border: none;
+}
+
+.btn-danger:hover {
+    background: #dc2626;
+}

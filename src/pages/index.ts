@@ -7,3 +7,5 @@ export { Achievements } from './Achievements/Achievements';
 export { GameDetails } from './GameDetails/GameDetails';
 export { Downloads } from './Downloads/Downloads';
 export { Astra } from './Astra/Astra';
+export { CloudPage as Cloud } from './Cloud/Cloud';
+export { default as Overlay } from './Overlay';

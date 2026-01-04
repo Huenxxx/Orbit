@@ -1,0 +1,24 @@
+  Determinando los proyectos que se van a restaurar...
+  Todos los proyectos están actualizados para la restauración.
+  Orbit.Shared -> C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Shared\bin\Debug\net8.0\Orbit.Shared.dll
+C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\Services\HotkeyService.cs(19,28): warning CS8618: El elemento campo "_source" que no acepta valores NULL debe contener un valor distinto de NULL al salir del constructor. Considere la posibilidad de agregar el modificador "required'"o declarar el campo como un valor que acepta valores NULL. [C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\Orbit.Core.csproj]
+C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\Services\HotkeyService.cs(20,24): warning CS8618: El elemento campo "_onHotkeyPressed" que no acepta valores NULL debe contener un valor distinto de NULL al salir del constructor. Considere la posibilidad de agregar el modificador "required'"o declarar el campo como un valor que acepta valores NULL. [C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\Orbit.Core.csproj]
+C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\OverlayWindow.xaml.cs(45,17): error CS0104: 'MessageBox' es una referencia ambigua entre 'System.Windows.Forms.MessageBox' y 'System.Windows.MessageBox' [C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\Orbit.Core.csproj]
+C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\OverlayWindow.xaml.cs(57,17): error CS0104: 'MessageBox' es una referencia ambigua entre 'System.Windows.Forms.MessageBox' y 'System.Windows.MessageBox' [C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\Orbit.Core.csproj]
+C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\OverlayWindow.xaml.cs(65,17): error CS0104: 'MessageBox' es una referencia ambigua entre 'System.Windows.Forms.MessageBox' y 'System.Windows.MessageBox' [C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\Orbit.Core.csproj]
+C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\GameOverlayForm.cs(23,27): warning CS8602: Desreferencia de una referencia posiblemente NULL. [C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\Orbit.Core.csproj]
+C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\GameOverlayForm.cs(61,23): warning CS8602: Desreferencia de una referencia posiblemente NULL. [C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\Orbit.Core.csproj]
+
+ERROR al compilar.
+
+C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\Services\HotkeyService.cs(19,28): warning CS8618: El elemento campo "_source" que no acepta valores NULL debe contener un valor distinto de NULL al salir del constructor. Considere la posibilidad de agregar el modificador "required'"o declarar el campo como un valor que acepta valores NULL. [C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\Orbit.Core.csproj]
+C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\Services\HotkeyService.cs(20,24): warning CS8618: El elemento campo "_onHotkeyPressed" que no acepta valores NULL debe contener un valor distinto de NULL al salir del constructor. Considere la posibilidad de agregar el modificador "required'"o declarar el campo como un valor que acepta valores NULL. [C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\Orbit.Core.csproj]
+C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\GameOverlayForm.cs(23,27): warning CS8602: Desreferencia de una referencia posiblemente NULL. [C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\Orbit.Core.csproj]
+C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\GameOverlayForm.cs(61,23): warning CS8602: Desreferencia de una referencia posiblemente NULL. [C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\Orbit.Core.csproj]
+C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\OverlayWindow.xaml.cs(45,17): error CS0104: 'MessageBox' es una referencia ambigua entre 'System.Windows.Forms.MessageBox' y 'System.Windows.MessageBox' [C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\Orbit.Core.csproj]
+C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\OverlayWindow.xaml.cs(57,17): error CS0104: 'MessageBox' es una referencia ambigua entre 'System.Windows.Forms.MessageBox' y 'System.Windows.MessageBox' [C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\Orbit.Core.csproj]
+C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\OverlayWindow.xaml.cs(65,17): error CS0104: 'MessageBox' es una referencia ambigua entre 'System.Windows.Forms.MessageBox' y 'System.Windows.MessageBox' [C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\Orbit.Core.csproj]
+    4 Advertencia(s)
+    3 Errores
+
+Tiempo transcurrido 00:00:01.17

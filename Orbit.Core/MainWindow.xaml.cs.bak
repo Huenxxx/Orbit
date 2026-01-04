@@ -1,4 +1,4 @@
-using System;
+﻿using System;
 using System.Collections.Generic;
 using System.Text.Json;
 using System.Threading.Tasks;
@@ -43,79 +43,24 @@ public partial class MainWindow : Window
     private const int HT_CAPTION = 0x2;
 
     private ConfigService _configService;
-    private GameService _gameService;
     private SteamService _steamService;
     private LaunchersService _launchersService;
     private TorrentService _torrentService;
     private RepackSearchService _repackSearchService;
     private AstraOverlay? _astraOverlay;
-    private OrbitOverlay? _orbitOverlay;
     private Forms.NotifyIcon? _notifyIcon;
     private bool _isClosingToTray = true;
-    private SystemStatsService _systemStatsService;
-    private System.Diagnostics.Process? _lastGameProcess;
-
-    private const int OVERLAY_HOTKEY_ID = 9000;
-    private uint _hotkeyModifiers = 0x0002 | 0x0004; // CTRL + SHIFT
-    private uint _hotkeyKey = 0x4F; // O
-
-    [System.Runtime.InteropServices.DllImport("user32.dll")]
-    private static extern bool RegisterHotKey(IntPtr hWnd, int id, uint fsModifiers, uint vk);
 
     public MainWindow()
     {
         InitializeComponent();
         _configService = new ConfigService();
-        _gameService = new GameService();
         _steamService = new SteamService();
         _launchersService = new LaunchersService();
         _torrentService = new TorrentService();
         _repackSearchService = new RepackSearchService();
-        _systemStatsService = new SystemStatsService();
-
-        _orbitOverlay = new OrbitOverlay();
-
         SetupSystemTray();
-        LoadHotkeyConfig();
         InitializeAsync();
-
-        this.Loaded += (s, e) =>
-        {
-            RegisterGlobalHotkeys();
-        };
-    }
-
-    private void LoadHotkeyConfig()
-    {
-        var mods = _configService.Get<uint?>("overlayHotkeyModifiers");
-        var key = _configService.Get<uint?>("overlayHotkeyKey");
-        if (mods.HasValue) _hotkeyModifiers = mods.Value;
-        if (key.HasValue) _hotkeyKey = key.Value;
-    }
-
-    private void RegisterGlobalHotkeys()
-    {
-        var windowHandle = new System.Windows.Interop.WindowInteropHelper(this).Handle;
-        var source = System.Windows.Interop.HwndSource.FromHwnd(windowHandle);
-        source.RemoveHook(HwndHook); // Avoid double hooks
-        source.AddHook(HwndHook);
-
-        UnregisterHotKey(windowHandle, OVERLAY_HOTKEY_ID);
-        RegisterHotKey(windowHandle, OVERLAY_HOTKEY_ID, _hotkeyModifiers, _hotkeyKey);
-    }
-
-    [System.Runtime.InteropServices.DllImport("user32.dll")]
-    private static extern bool UnregisterHotKey(IntPtr hWnd, int id);
-
-    private IntPtr HwndHook(IntPtr hwnd, int msg, IntPtr wParam, IntPtr lParam, ref bool handled)
-    {
-        const int WM_HOTKEY = 0x0312;
-        if (msg == WM_HOTKEY && wParam.ToInt32() == OVERLAY_HOTKEY_ID)
-        {
-            _orbitOverlay?.Toggle();
-            handled = true;
-        }
-        return IntPtr.Zero;
     }
 
     private void SetupSystemTray()
@@ -147,35 +92,17 @@ public partial class MainWindow : Window
             g.Clear(Drawing.Color.Transparent);
             g.SmoothingMode = Drawing.Drawing2D.SmoothingMode.AntiAlias;
 
-            // Dark background circle (Like the second photo)
-            using (var bgBrush = new Drawing.SolidBrush(Drawing.Color.FromArgb(15, 23, 42))) // Dark slate/black
-            {
-                g.FillEllipse(bgBrush, 0, 0, 31, 31);
-            }
-
-            // Faint inner rings for depth
-            using (var faintPen = new Drawing.Pen(Drawing.Color.FromArgb(40, 50, 80), 1))
-            {
-                g.DrawEllipse(faintPen, 8, 8, 16, 16);
-            }
-
             // Outer ring
-            using (var pen = new Drawing.Pen(Drawing.Color.FromArgb(99, 102, 241), 2))
-            {
-                g.DrawEllipse(pen, 4, 4, 24, 24);
-            }
+            using var pen = new Drawing.Pen(Drawing.Color.FromArgb(99, 102, 241), 2);
+            g.DrawEllipse(pen, 4, 4, 24, 24);
 
             // Core
-            using (var brush = new Drawing.SolidBrush(Drawing.Color.FromArgb(6, 182, 212)))
-            {
-                g.FillEllipse(brush, 12, 12, 8, 8);
-            }
+            using var brush = new Drawing.SolidBrush(Drawing.Color.FromArgb(6, 182, 212));
+            g.FillEllipse(brush, 12, 12, 8, 8);
 
             // Small orbiting dot
-            using (var pinkBrush = new Drawing.SolidBrush(Drawing.Color.FromArgb(244, 114, 182)))
-            {
-                g.FillEllipse(pinkBrush, 14, 2, 4, 4);
-            }
+            using var pinkBrush = new Drawing.SolidBrush(Drawing.Color.FromArgb(244, 114, 182));
+            g.FillEllipse(pinkBrush, 14, 2, 4, 4);
         }
 
         return Drawing.Icon.FromHandle(bitmap.GetHicon());
@@ -211,25 +138,16 @@ public partial class MainWindow : Window
 
     async void InitializeAsync()
     {
-        try
-        {
-            // Ensure WebView2 is ready with a specific User Data Folder to avoid permission/locking issues
-            string userDataFolder = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData), "Orbit", "WebView2Data");
-            var env = await Microsoft.Web.WebView2.Core.CoreWebView2Environment.CreateAsync(null, userDataFolder);
-            await MainWebView.EnsureCoreWebView2Async(env);
-            MainWebView.Source = new Uri("http://localhost:5173");
+        // Ensure WebView2 is ready with a specific User Data Folder to avoid permission/locking issues
+        string userDataFolder = System.IO.Path.Combine(System.Environment.GetFolderPath(System.Environment.SpecialFolder.ApplicationData), "Orbit", "WebView2Data");
+        var env = await Microsoft.Web.WebView2.Core.CoreWebView2Environment.CreateAsync(null, userDataFolder);
+        await MainWebView.EnsureCoreWebView2Async(env);
 
-            // Listen for messages from React
-            MainWebView.WebMessageReceived += MainWebView_WebMessageReceived!;
+        // Listen for messages from React
+        MainWebView.WebMessageReceived += MainWebView_WebMessageReceived!;
 
-            // Inject the C# bridge into the page
-            await InjectCSharpBridge();
-        }
-        catch (Exception ex)
-        {
-             System.Windows.MessageBox.Show($"Error critical en InitializeAsync: {ex.Message}", "Orbit Error", MessageBoxButton.OK, MessageBoxImage.Error);
-             System.IO.File.WriteAllText("crash_init.txt", ex.ToString());
-        }
+        // Inject the C# bridge into the page
+        await InjectCSharpBridge();
     }
 
     private async Task InjectCSharpBridge()
@@ -399,29 +317,6 @@ public partial class MainWindow : Window
                         }
                         catch { }
                     });
-                    result = new { success = true };
-                    break;
-
-                case "get-system-stats":
-                    result = _systemStatsService.GetStats();
-                    break;
-
-                case "save-hud-settings":
-                    if (request.payload is JsonElement hudSettings)
-                    {
-                        if (hudSettings.TryGetProperty("hotkey", out var hotkeyEl))
-                        {
-                            _hotkeyModifiers = hotkeyEl.GetProperty("modifiers").GetUInt32();
-                            _hotkeyKey = hotkeyEl.GetProperty("key").GetUInt32();
-                            _configService.Set("overlayHotkeyModifiers", _hotkeyModifiers);
-                            _configService.Set("overlayHotkeyKey", _hotkeyKey);
-                            RegisterGlobalHotkeys();
-                        }
-                        if (hudSettings.TryGetProperty("color", out var colorEl))
-                        {
-                            _configService.Set("hudColor", colorEl.GetString());
-                        }
-                    }
                     result = new { success = true };
                     break;
 
@@ -895,31 +790,17 @@ public partial class MainWindow : Window
                 // GAMES STORAGE
                 // ==========================================
                 case "get-games":
-                result = _gameService.GetGames();
-                break;
+                    result = _configService.Get<List<object>>("games") ?? new List<object>();
+                    break;
 
-            case "save-games":
-                if (request.payload is JsonElement gamesEl)
-                {
-                    try 
+                case "save-games":
+                    if (request.payload is JsonElement gamesEl)
                     {
-                        var games = JsonSerializer.Deserialize<List<Models.Game>>(gamesEl.GetRawText(), new JsonSerializerOptions { PropertyNameCaseInsensitive = true });
-                        if (games != null)
-                        {
-                            var saved = _gameService.SaveGames(games);
-                            result = new { success = saved };
-                        }
-                        else
-                        {
-                            result = new { success = false, error = "Failed to deserialize games" };
-                        }
+                        var games = JsonSerializer.Deserialize<List<object>>(gamesEl.GetRawText());
+                        _configService.Set("games", games);
+                        result = new { success = true };
                     }
-                    catch (Exception ex)
-                    {
-                         result = new { success = false, error = ex.Message };
-                    }
-                }
-                break;
+                    break;
 
                 case "get-settings":
                     result = _configService.Get<object>("settings") ?? new { };
@@ -964,73 +845,24 @@ public partial class MainWindow : Window
                 // GAME LAUNCHING
                 // ==========================================
                 case "launch-game":
-                    string? execPath = null;
-                    string? installPath = null;
-                    string? gameTitle = "Juego";
-
-                    if (request.payload is JsonElement launchEl)
+                    if (request.payload is JsonElement execEl && execEl.ValueKind == JsonValueKind.String)
                     {
-                        if (launchEl.ValueKind == JsonValueKind.String)
+                        var execPath = execEl.GetString();
+                        if (!string.IsNullOrEmpty(execPath))
                         {
-                            execPath = launchEl.GetString();
-                        }
-                        else if (launchEl.ValueKind == JsonValueKind.Object)
-                        {
-                            if (launchEl.TryGetProperty("executablePath", out var exeProp))
-                                execPath = exeProp.GetString();
-                            if (launchEl.TryGetProperty("installPath", out var installProp))
-                                installPath = installProp.GetString();
-                            if (launchEl.TryGetProperty("title", out var titleProp))
-                                gameTitle = titleProp.GetString() ?? "Juego";
-                        }
-                    }
-
-                    if (!string.IsNullOrEmpty(execPath))
-                    {
-                        try
-                        {
-                            // If installPath is provided, use it as working dir.
-                            // Otherwise, fallback to the executable's directory.
-                            // Some games (like Factorio) require the working directory to be the game root (e.g. Factorio/), 
-                            // not the bin/x64 folder.
-                            var workingDir = !string.IsNullOrEmpty(installPath) && System.IO.Directory.Exists(installPath) 
-                                ? installPath 
-                                : System.IO.Path.GetDirectoryName(execPath);
-
-                            _lastGameProcess = System.Diagnostics.Process.Start(new System.Diagnostics.ProcessStartInfo
+                            try
                             {
-                                FileName = execPath,
-                                WorkingDirectory = workingDir,
-                                UseShellExecute = true
-                            });
-
-                            // Show custom toast notification (overlay style)
-                            ToastNotification.Show(
-                                $"Iniciando {gameTitle}",
-                                "💡 Presiona CTRL+SHIFT+O para el menú de Orbit"
-                            );
-
-                            result = new { success = true };
-                        }
-                        catch (Exception ex)
-                        {
-                            result = new { success = false, error = ex.Message };
+                                // Use explorer.exe to launch - this is exactly like double-clicking the file
+                                // and ensures no environment is inherited from Orbit
+                                System.Diagnostics.Process.Start("explorer.exe", $"\"{execPath}\"");
+                                result = new { success = true };
+                            }
+                            catch (Exception ex)
+                            {
+                                result = new { success = false, error = ex.Message };
+                            }
                         }
                     }
-                    break;
-
-                case "kill-game":
-                    bool killed = false;
-                    try
-                    {
-                        if (_lastGameProcess != null && !_lastGameProcess.HasExited)
-                        {
-                            _lastGameProcess.Kill(true);
-                            killed = true;
-                        }
-                    }
-                    catch { }
-                    result = new { success = killed };
                     break;
 
                 case "open-external":
@@ -1139,46 +971,6 @@ public partial class MainWindow : Window
                         }
                     }
                     break;
-
-                case "scan-directory-for-exe":
-                    if (request.payload is JsonElement scanPathEl && scanPathEl.ValueKind == JsonValueKind.String)
-                    {
-                        var scanDir = scanPathEl.GetString();
-                        if (!string.IsNullOrEmpty(scanDir) && System.IO.Directory.Exists(scanDir))
-                        {
-                            try {
-                                // Recursive search ignoring access denied errors
-                                var allExes = new List<string>();
-                                var stack = new Stack<string>();
-                                stack.Push(scanDir);
-
-                                while (stack.Count > 0)
-                                {
-                                    var dir = stack.Pop();
-                                    try
-                                    {
-                                        allExes.AddRange(System.IO.Directory.GetFiles(dir, "*.exe"));
-                                        foreach (var subDir in System.IO.Directory.GetDirectories(dir))
-                                        {
-                                            stack.Push(subDir);
-                                        }
-                                    }
-                                    catch (UnauthorizedAccessException) { /* Skip scanning this folder */ }
-                                    catch (Exception) { /* Skip generic errors */ }
-                                }
-                                
-                                result = new { success = true, executables = allExes };
-                            } catch (Exception ex) {
-                                result = new { success = false, error = ex.Message };
-                            }
-                        }
-                        else
-                        {
-                             result = new { success = false, error = "Directory not found" };
-                        }
-                    }
-                    break;
-
 
                 // ==========================================
                 // STEAM SERVICE
@@ -1298,6 +1090,7 @@ public partial class MainWindow : Window
                     }
                     break;
 
+                // (Duplicate block removed)
 
                 // ==========================================
                 // TORRENT SERVICE

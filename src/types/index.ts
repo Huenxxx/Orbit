@@ -25,6 +25,11 @@ export interface Game {
     achievements?: Achievement[];
     isInstalled: boolean;
     size?: string;
+    // RAWG Integration - for universal game identification
+    rawgId?: number;           // RAWG game ID for universal identification
+    rawgSlug?: string;         // RAWG slug for URL-friendly identification
+    autoMatched?: boolean;     // Whether this game was auto-matched by Orbit
+    originalTitle?: string;    // Original title before normalization (for repacks)
 }
 
 export type GamePlatform = 'steam' | 'epic' | 'gog' | 'origin' | 'uplay' | 'minecraft' | 'custom' | 'other';

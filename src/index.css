@@ -148,11 +148,21 @@ body {
   min-height: 100vh;
 }
 
+body.overlay-mode {
+  background: transparent !important;
+}
+
+
 #root {
   min-height: 100vh;
   display: flex;
   flex-direction: column;
 }
+
+#root.overlay-mode {
+  background: transparent !important;
+}
+
 
 /* Modal Portal - Portal target for modals */
 #modal-portal {
@@ -601,4 +611,83 @@ a:hover {
 
 .gap-8 {
   gap: var(--space-8);
+}
+
+/* ===== Toggle Switch Component ===== */
+.switch {
+  position: relative;
+  display: inline-block;
+  width: 48px;
+  height: 24px;
+}
+
+.switch input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+}
+
+.slider {
+  position: absolute;
+  cursor: pointer;
+  top: 0;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  background-color: rgba(255, 255, 255, 0.1);
+  transition: 0.3s;
+  border: 1px solid rgba(255, 255, 255, 0.1);
+}
+
+.slider:before {
+  position: absolute;
+  content: "";
+  height: 18px;
+  width: 18px;
+  left: 2px;
+  bottom: 2px;
+  background-color: white;
+  transition: 0.3s;
+}
+
+input:checked+.slider {
+  background-color: var(--color-primary);
+  border-color: var(--color-primary);
+  box-shadow: 0 0 10px var(--color-primary-glow);
+}
+
+input:checked+.slider:before {
+  transform: translateX(24px);
+}
+
+.slider.round {
+  border-radius: 24px;
+}
+
+.slider.round:before {
+  border-radius: 50%;
+}
+
+/* Setting item for overlay */
+.setting-item {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  padding: 15px;
+  background: rgba(255, 255, 255, 0.03);
+  border-radius: var(--radius-md);
+  border: var(--border-subtle);
+  margin-bottom: 10px;
+}
+
+.subtitle {
+  color: var(--text-secondary);
+  margin-bottom: 1.5rem;
+  font-size: var(--text-sm);
+}
+
+.overlay-clock {
+  font-family: var(--font-mono);
+  font-size: var(--text-lg);
+  color: var(--text-secondary);
 }

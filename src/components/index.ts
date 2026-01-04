@@ -19,3 +19,4 @@ export { LinkAccountsModal } from './LinkAccountsModal/LinkAccountsModal';
 // Social Components
 export { FriendsList } from './FriendsList/FriendsList';
 export { NotificationToast } from './NotificationToast/NotificationToast';
+export { ConfirmModal } from './ConfirmModal/ConfirmModal';

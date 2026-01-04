@@ -101,3 +101,22 @@
   position: relative;
   z-index: 1;
 }
+
+/* Overlay Mode Styles */
+.app.overlay-mode {
+  background: transparent !important;
+}
+
+.overlay-mode .overlay-content-wrapper {
+  flex: 1;
+  display: flex;
+  flex-direction: column;
+  background: transparent !important;
+  height: 100vh;
+  width: 100vw;
+}
+
+.app.overlay-mode::before,
+.app.overlay-mode::after {
+  display: none !important;
+}

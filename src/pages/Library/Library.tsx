@@ -14,7 +14,8 @@ import {
     FolderOpen,
     ExternalLink,
     RefreshCw,
-    Download
+    Download,
+    Trash2
 } from 'lucide-react';
 import { useGamesStore, useUIStore } from '../../stores';
 import { useLinkedAccountsStore } from '../../stores/linkedAccountsStore';
@@ -124,10 +125,11 @@ export function Library() {
         setFilters,
         resetFilters,
         selectedGame,
-        setSelectedGame
+        setSelectedGame,
+        deleteGame
     } = useGamesStore();
 
-    const { openModal, closeModal, modalOpen, navigateTo } = useUIStore();
+    const { openModal, closeModal, modalOpen, navigateTo, openConfirmModal } = useUIStore();
     const {
         steamAccount,
         epicAccount,
@@ -367,6 +369,24 @@ export function Library() {
         }
     };
 
+    const handleDeleteGame = async (game: UnifiedGame) => {
+        if (!game.originalGame) return;
+
+        openConfirmModal({
+            title: 'Eliminar juego',
+            message: `¿Estás seguro de que quieres eliminar "${game.name}" de tu biblioteca? Esta acción no se puede deshacer.`,
+            confirmText: 'Eliminar',
+            cancelText: 'Cancelar',
+            isDanger: true,
+            onConfirm: async () => {
+                if (game.originalGame) {
+                    await deleteGame(game.originalGame.id);
+                    showSuccess('Juego eliminado', `${game.name} ha sido eliminado de tu biblioteca`);
+                }
+            }
+        });
+    };
+
     // Context menu for games
     const showContextMenu = (e: React.MouseEvent, game: UnifiedGame) => {
         e.preventDefault();
@@ -394,6 +414,17 @@ export function Library() {
                 label: 'Abrir directorio',
                 icon: <FolderOpen size={16} />,
                 onClick: () => openGameDirectory(game.installPath!)
+            });
+        }
+
+        if (game.originalGame) {
+            items.push({
+                id: 'delete',
+                label: 'Eliminar de biblioteca',
+                icon: <Trash2 size={16} />,
+                onClick: () => handleDeleteGame(game),
+                danger: true,
+                divider: true
             });
         }
 

@@ -1,0 +1,16 @@
+  Determinando los proyectos que se van a restaurar...
+  Todos los proyectos están actualizados para la restauración.
+  Orbit.Shared -> C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Shared\bin\Debug\net8.0\Orbit.Shared.dll
+C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\OrbitOverlay.xaml.cs(93,28): warning CS1998: El método asincrónico carece de operadores "await" y se ejecutará de forma sincrónica. Puede usar el operador 'await' para esperar llamadas API que no sean de bloqueo o 'await Task.Run(...)' para hacer tareas enlazadas a la CPU en un subproceso en segundo plano. [C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\Orbit.Core.csproj]
+C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\Services\SystemStatsService.cs(31,32): error CS0220: La operación se desborda en el momento de la compilación en modo checked [C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\Orbit.Core.csproj]
+C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\Services\SystemStatsService.cs(14,16): warning CS8618: El elemento campo "_cpuCounter" que no acepta valores NULL debe contener un valor distinto de NULL al salir del constructor. Considere la posibilidad de agregar el modificador "required'"o declarar el campo como un valor que acepta valores NULL. [C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\Orbit.Core.csproj]
+
+ERROR al compilar.
+
+C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\OrbitOverlay.xaml.cs(93,28): warning CS1998: El método asincrónico carece de operadores "await" y se ejecutará de forma sincrónica. Puede usar el operador 'await' para esperar llamadas API que no sean de bloqueo o 'await Task.Run(...)' para hacer tareas enlazadas a la CPU en un subproceso en segundo plano. [C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\Orbit.Core.csproj]
+C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\Services\SystemStatsService.cs(14,16): warning CS8618: El elemento campo "_cpuCounter" que no acepta valores NULL debe contener un valor distinto de NULL al salir del constructor. Considere la posibilidad de agregar el modificador "required'"o declarar el campo como un valor que acepta valores NULL. [C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\Orbit.Core.csproj]
+C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\Services\SystemStatsService.cs(31,32): error CS0220: La operación se desborda en el momento de la compilación en modo checked [C:\Users\huenx\Documents\MOVIDAS\APPS\Orbit\Orbit.Core\Orbit.Core.csproj]
+    2 Advertencia(s)
+    1 Errores
+
+Tiempo transcurrido 00:00:01.19

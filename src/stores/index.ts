@@ -12,6 +12,9 @@ import type {
     FilterOptions,
     Achievement
 } from '../types';
+import { cloudSyncService } from '../services/cloudSyncService';
+import { authService } from '../services/authService';
+import { gameMatchingService } from '../services/gameMatchingService';
 
 // Helper to check if we're in Electron
 const isElectron = typeof window !== 'undefined' && window.require;
@@ -41,6 +44,9 @@ interface GamesState {
     toggleFavorite: (id: string) => Promise<void>;
     updatePlaytime: (id: string, minutes: number) => Promise<void>;
     launchGame: (id: string) => Promise<{ success: boolean; error?: string }>;
+    // Game matching
+    rematchGame: (id: string) => Promise<void>;
+    matchAllUnmatchedGames: () => Promise<void>;
 }
 
 const defaultFilters: FilterOptions = {
@@ -79,21 +85,45 @@ export const useGamesStore = create<GamesState>((set, get) => ({
     },
 
     addGame: async (gameData) => {
-        const newGame: Game = {
+        // Create base game
+        const baseGame: Game = {
             ...gameData,
             id: uuidv4(),
             dateAdded: new Date().toISOString()
         };
 
-        const updatedGames = [...get().games, newGame];
+        // Add game immediately (optimistic update)
+        let updatedGames = [...get().games, baseGame];
         set({ games: updatedGames });
+
+        // Try to auto-match and enrich the game in background
+        try {
+            const enrichedGame = await gameMatchingService.autoMatchAndEnrich(baseGame);
+
+            // Update with enriched data if matched
+            if (enrichedGame.rawgId) {
+                updatedGames = get().games.map(g =>
+                    g.id === baseGame.id ? { ...g, ...enrichedGame, id: baseGame.id, dateAdded: baseGame.dateAdded } : g
+                );
+                set({ games: updatedGames });
+                console.log(`✅ Game auto-matched: ${enrichedGame.title} (RAWG ID: ${enrichedGame.rawgId})`);
+            }
+        } catch (error) {
+            console.warn('Auto-match failed, using original data:', error);
+        }
 
         try {
             if (isElectron) {
                 const { ipcRenderer } = window.require('electron');
-                await ipcRenderer.invoke('save-games', updatedGames);
+                await ipcRenderer.invoke('save-games', get().games);
             } else {
-                localStorage.setItem('orbit-games', JSON.stringify(updatedGames));
+                localStorage.setItem('orbit-games', JSON.stringify(get().games));
+            }
+
+            // Sync to cloud if user is authenticated
+            const user = authService.getCurrentUser();
+            if (user) {
+                cloudSyncService.syncGamesToCloud(user.uid, get().games);
             }
         } catch (error) {
             set({ error: (error as Error).message });
@@ -101,9 +131,17 @@ export const useGamesStore = create<GamesState>((set, get) => ({
     },
 
     updateGame: async (id, updates) => {
-        const updatedGames = get().games.map(game =>
+        const currentGames = get().games;
+        const updatedGames = currentGames.map(game =>
             game.id === id ? { ...game, ...updates } : game
         );
+
+        // Also update selectedGame if it's the one being modified
+        const currentSelected = get().selectedGame;
+        if (currentSelected && currentSelected.id === id) {
+            set({ selectedGame: { ...currentSelected, ...updates } });
+        }
+
         set({ games: updatedGames });
 
         try {
@@ -113,8 +151,17 @@ export const useGamesStore = create<GamesState>((set, get) => ({
             } else {
                 localStorage.setItem('orbit-games', JSON.stringify(updatedGames));
             }
+
+            // Sync to cloud if user is authenticated
+            const user = authService.getCurrentUser();
+            if (user) {
+                cloudSyncService.syncGamesToCloud(user.uid, updatedGames);
+            }
+            return { success: true };
         } catch (error) {
+            console.error('Failed to save game updates:', error);
             set({ error: (error as Error).message });
+            return { success: false, error: (error as Error).message };
         }
     },
 
@@ -128,6 +175,12 @@ export const useGamesStore = create<GamesState>((set, get) => ({
                 await ipcRenderer.invoke('save-games', updatedGames);
             } else {
                 localStorage.setItem('orbit-games', JSON.stringify(updatedGames));
+            }
+
+            // Sync to cloud if user is authenticated
+            const user = authService.getCurrentUser();
+            if (user) {
+                cloudSyncService.syncGamesToCloud(user.uid, updatedGames);
             }
         } catch (error) {
             set({ error: (error as Error).message });
@@ -167,7 +220,11 @@ export const useGamesStore = create<GamesState>((set, get) => ({
         try {
             if (isElectron) {
                 const { ipcRenderer } = window.require('electron');
-                const result = await ipcRenderer.invoke('launch-game', game.executablePath);
+                const result = await ipcRenderer.invoke('launch-game', {
+                    executablePath: game.executablePath,
+                    installPath: game.installPath,
+                    title: game.title
+                });
                 if (result.success) {
                     await get().updateGame(id, { lastPlayed: new Date().toISOString() });
                 }
@@ -177,6 +234,94 @@ export const useGamesStore = create<GamesState>((set, get) => ({
         } catch (error) {
             return { success: false, error: (error as Error).message };
         }
+    },
+
+    // Re-match a specific game
+    rematchGame: async (id) => {
+        const game = get().games.find(g => g.id === id);
+        if (!game) return;
+
+        set({ isLoading: true });
+        try {
+            const enrichedGame = await gameMatchingService.rematchGame(game);
+
+            if (enrichedGame.rawgId) {
+                const updatedGames = get().games.map(g =>
+                    g.id === id ? { ...g, ...enrichedGame, id: game.id, dateAdded: game.dateAdded } : g
+                );
+                set({ games: updatedGames, isLoading: false });
+
+                // Save and sync
+                if (isElectron) {
+                    const { ipcRenderer } = window.require('electron');
+                    await ipcRenderer.invoke('save-games', updatedGames);
+                } else {
+                    localStorage.setItem('orbit-games', JSON.stringify(updatedGames));
+                }
+
+                const user = authService.getCurrentUser();
+                if (user) {
+                    cloudSyncService.syncGamesToCloud(user.uid, updatedGames);
+                }
+
+                console.log(`✅ Re-matched: ${enrichedGame.title} (RAWG ID: ${enrichedGame.rawgId})`);
+            } else {
+                set({ isLoading: false });
+                console.log(`❌ Could not match: ${game.title}`);
+            }
+        } catch (error) {
+            set({ isLoading: false, error: (error as Error).message });
+        }
+    },
+
+    // Match all unmatched games in library
+    matchAllUnmatchedGames: async () => {
+        const unmatchedGames = get().games.filter(g => !g.rawgId);
+        if (unmatchedGames.length === 0) return;
+
+        set({ isLoading: true });
+        console.log(`🔄 Matching ${unmatchedGames.length} unmatched games...`);
+
+        let matchedCount = 0;
+        for (const game of unmatchedGames) {
+            try {
+                const enrichedGame = await gameMatchingService.autoMatchAndEnrich(game);
+
+                if (enrichedGame.rawgId) {
+                    const updatedGames = get().games.map(g =>
+                        g.id === game.id ? { ...g, ...enrichedGame, id: game.id, dateAdded: game.dateAdded } : g
+                    );
+                    set({ games: updatedGames });
+                    matchedCount++;
+                }
+
+                // Small delay to avoid rate limiting
+                await new Promise(resolve => setTimeout(resolve, 500));
+            } catch (error) {
+                console.warn(`Failed to match ${game.title}:`, error);
+            }
+        }
+
+        // Save all changes
+        const finalGames = get().games;
+        try {
+            if (isElectron) {
+                const { ipcRenderer } = window.require('electron');
+                await ipcRenderer.invoke('save-games', finalGames);
+            } else {
+                localStorage.setItem('orbit-games', JSON.stringify(finalGames));
+            }
+
+            const user = authService.getCurrentUser();
+            if (user) {
+                cloudSyncService.syncGamesToCloud(user.uid, finalGames);
+            }
+        } catch (error) {
+            console.error('Error saving matched games:', error);
+        }
+
+        set({ isLoading: false });
+        console.log(`✅ Matched ${matchedCount} of ${unmatchedGames.length} games`);
     }
 }));
 
@@ -342,13 +487,38 @@ interface UIState {
     notifications: { id: string; type: string; message: string }[];
     gameDetailsData: unknown | null;
 
+    navigationHistory: string[];
+    navigationFuture: string[]; // For forward navigation
+
     toggleSidebar: () => void;
     setCurrentPage: (page: string) => void;
     navigateTo: (page: string, data?: unknown) => void;
+    goBack: () => void;
+    goForward: () => void;
     openModal: (modalId: string) => void;
     closeModal: () => void;
     addNotification: (type: string, message: string) => void;
     removeNotification: (id: string) => void;
+
+    // Confirm Modal
+    confirmModal: {
+        isOpen: boolean;
+        title: string;
+        message: string;
+        onConfirm: () => void;
+        confirmText?: string;
+        cancelText?: string;
+        isDanger?: boolean;
+    };
+    openConfirmModal: (options: {
+        title: string;
+        message: string;
+        onConfirm: () => void;
+        confirmText?: string;
+        cancelText?: string;
+        isDanger?: boolean;
+    }) => void;
+    closeConfirmModal: () => void;
 }
 
 export const useUIStore = create<UIState>((set, get) => ({
@@ -357,10 +527,62 @@ export const useUIStore = create<UIState>((set, get) => ({
     modalOpen: null,
     notifications: [],
     gameDetailsData: null,
+    navigationHistory: [],
+    navigationFuture: [],
 
     toggleSidebar: () => set({ sidebarCollapsed: !get().sidebarCollapsed }),
-    setCurrentPage: (page) => set({ currentPage: page }),
-    navigateTo: (page, data) => set({ currentPage: page, gameDetailsData: data ?? null }),
+
+    setCurrentPage: (page) => {
+        // Simple set, treating as a new navigation
+        const current = get().currentPage;
+        if (current !== page) {
+            set({
+                currentPage: page,
+                navigationHistory: [...get().navigationHistory, current],
+                navigationFuture: [] // Clear future on new navigation
+            });
+        }
+    },
+
+    navigateTo: (page, data) => {
+        const current = get().currentPage;
+        if (current !== page) {
+            set({
+                currentPage: page,
+                gameDetailsData: data ?? null,
+                navigationHistory: [...get().navigationHistory, current],
+                navigationFuture: []
+            });
+        }
+    },
+
+    goBack: () => {
+        const { navigationHistory, navigationFuture, currentPage } = get();
+        if (navigationHistory.length === 0) return;
+
+        const previousPage = navigationHistory[navigationHistory.length - 1];
+        const newHistory = navigationHistory.slice(0, -1);
+
+        set({
+            currentPage: previousPage,
+            navigationHistory: newHistory,
+            navigationFuture: [currentPage, ...navigationFuture]
+        });
+    },
+
+    goForward: () => {
+        const { navigationHistory, navigationFuture, currentPage } = get();
+        if (navigationFuture.length === 0) return;
+
+        const nextPage = navigationFuture[0];
+        const newFuture = navigationFuture.slice(1);
+
+        set({
+            currentPage: nextPage,
+            navigationHistory: [...navigationHistory, currentPage],
+            navigationFuture: newFuture
+        });
+    },
     openModal: (modalId) => set({ modalOpen: modalId }),
     closeModal: () => set({ modalOpen: null }),
 
@@ -372,5 +594,31 @@ export const useUIStore = create<UIState>((set, get) => ({
 
     removeNotification: (id) => {
         set({ notifications: get().notifications.filter(n => n.id !== id) });
-    }
+    },
+    // Confirm Modal
+    confirmModal: {
+        isOpen: false,
+        title: '',
+        message: '',
+        onConfirm: () => { },
+        confirmText: 'Confirmar',
+        cancelText: 'Cancelar',
+        isDanger: false
+    },
+
+    openConfirmModal: (options) => set({
+        confirmModal: {
+            isOpen: true,
+            title: options.title,
+            message: options.message,
+            onConfirm: options.onConfirm,
+            confirmText: options.confirmText ?? 'Confirmar',
+            cancelText: options.cancelText ?? 'Cancelar',
+            isDanger: options.isDanger ?? false
+        }
+    }),
+
+    closeConfirmModal: () => set((state) => ({
+        confirmModal: { ...state.confirmModal, isOpen: false }
+    }))
 }));

@@ -10,7 +10,6 @@
         WindowStyle="None"
         ResizeMode="CanResize"
         AllowsTransparency="True"
-        Icon="app.ico"
         Background="#000000">
     
     <!-- WindowChrome permite redimensionar la ventana sin bordes -->
@@ -23,6 +22,6 @@
     </WindowChrome.WindowChrome>
     
     <Grid>
-        <wv2:WebView2 Name="MainWebView"/>
+        <wv2:WebView2 Name="MainWebView" Source="http://localhost:5173"/>
     </Grid>
 </Window>

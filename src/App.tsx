@@ -1,7 +1,7 @@
 import { useEffect } from 'react';
 import { AnimatePresence, motion } from 'framer-motion';
-import { TitleBar, Sidebar, AuthScreen, NotificationToast, EditGameModal } from './components';
-import { Dashboard, Library, Settings, Profile, Catalog, Achievements, GameDetails, Downloads, Astra } from './pages';
+import { TitleBar, Sidebar, AuthScreen, NotificationToast, EditGameModal, ConfirmModal } from './components';
+import { Dashboard, Library, Settings, Profile, Catalog, Achievements, GameDetails, Downloads, Astra, Cloud, Overlay } from './pages';
 import { useUIStore, useSettingsStore, useGamesStore } from './stores';
 import { useAuthStore } from './stores/authStore';
 import { useLinkedAccountsStore } from './stores/linkedAccountsStore';
@@ -39,7 +39,7 @@ function LoadingScreen() {
 }
 
 function App() {
-  const { currentPage, modalOpen, closeModal, navigateTo } = useUIStore();
+  const { currentPage, modalOpen, closeModal, navigateTo, confirmModal, closeConfirmModal } = useUIStore();
   const { loadSettings, settings } = useSettingsStore();
   const { user, isInitialized, initialize, isAvailable } = useAuthStore();
   const { selectedGame, setSelectedGame } = useGamesStore();
@@ -51,6 +51,12 @@ function App() {
     loadSettings();
     initialize();
     loadLinkedAccounts();
+
+    // Initial route detection from hash
+    const hash = window.location.hash;
+    if (hash === '#/overlay') {
+      navigateTo('overlay');
+    }
 
     // Listen for magnet URIs from main process
     const { ipcRenderer } = electronRequire ? electronRequire('electron') : { ipcRenderer: null };
@@ -73,16 +79,48 @@ function App() {
 
       ipcRenderer.on('magnet-received', handleMagnetReceived);
 
+      ipcRenderer.on('magnet-received', handleMagnetReceived);
+
       return () => {
         ipcRenderer.removeListener('magnet-received', handleMagnetReceived);
       };
     }
   }, []);
 
+  // Mouse navigation (Back/Forward)
+  useEffect(() => {
+    const handleMouseUp = (e: MouseEvent) => {
+      // Button 3: Back (Mouse4)
+      if (e.button === 3) {
+        e.preventDefault();
+        window.history.back(); // keep window history for robustness
+        useUIStore.getState().goBack();
+      }
+      // Button 4: Forward (Mouse5)
+      else if (e.button === 4) {
+        e.preventDefault();
+        window.history.forward(); // keep window history for robustness
+        useUIStore.getState().goForward();
+      }
+    };
+
+    window.addEventListener('mouseup', handleMouseUp);
+    return () => window.removeEventListener('mouseup', handleMouseUp);
+  }, []);
+
   // Apply theme
   useEffect(() => {
     document.documentElement.setAttribute('data-theme', settings.theme);
   }, [settings.theme]);
+
+  // Manage body class for overlay transparency
+  useEffect(() => {
+    if (currentPage === 'overlay') {
+      document.body.classList.add('overlay-mode');
+    } else {
+      document.body.classList.remove('overlay-mode');
+    }
+  }, [currentPage]);
 
   const renderPage = () => {
     const pageVariants = {
@@ -128,9 +166,11 @@ function App() {
       case 'mods':
         return wrapPage('mods', <PlaceholderPage title="Mod Manager" description="Instala y gestiona mods para tus juegos favoritos" />);
       case 'cloud':
-        return wrapPage('cloud', <PlaceholderPage title="Guardado en la Nube" description="Sincroniza tu progreso entre todos tus dispositivos" />);
+        return wrapPage('cloud', <Cloud />);
       case 'game-details':
         return wrapPage('game-details', <GameDetails />);
+      case 'overlay':
+        return wrapPage('overlay', <Overlay />);
       case 'astra':
         return wrapPage('astra', <Astra />);
       default:
@@ -162,6 +202,19 @@ function App() {
   // But show a warning - or require login if you prefer strict mode
   // For now, we'll require login if Firebase is available
 
+  if (currentPage === 'overlay') {
+    return (
+      <div className="app overlay-mode">
+        <main className="overlay-content-wrapper">
+          <AnimatePresence mode="wait">
+            {renderPage()}
+          </AnimatePresence>
+        </main>
+        <NotificationToast />
+      </div>
+    );
+  }
+
   return (
     <div className="app">
       <TitleBar />
@@ -185,6 +238,18 @@ function App() {
       </AnimatePresence>
 
       <NotificationToast />
+
+      {/* Global Confirm Modal */}
+      <ConfirmModal
+        isOpen={confirmModal.isOpen}
+        title={confirmModal.title}
+        message={confirmModal.message}
+        onConfirm={confirmModal.onConfirm}
+        onCancel={closeConfirmModal}
+        confirmText={confirmModal.confirmText}
+        cancelText={confirmModal.cancelText}
+        isDanger={confirmModal.isDanger}
+      />
     </div>
   );
 }

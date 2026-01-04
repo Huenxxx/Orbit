@@ -7,11 +7,20 @@ import {
     Folder,
     Tag,
     Save,
-    Loader2
+    Loader2,
+    MoreHorizontal
 } from 'lucide-react';
-import { useGamesStore } from '../../stores';
+import { useGamesStore, useUIStore } from '../../stores';
+import { useNotificationStore } from '../../stores/notificationStore';
+import { ipc } from '../../services/ipc';
 import type { Game, GamePlatform, GameStatus } from '../../types';
 import './EditGameModal.css';
+
+// Check if we're in a desktop app (has IPC available)
+const isDesktopApp = typeof window !== 'undefined' && (
+    (window as any).csharp?.invoke ||
+    (window as any).chrome?.webview
+);
 
 interface EditGameModalProps {
     game: Game;
@@ -92,6 +101,93 @@ export function EditGameModal({ game, onClose }: EditGameModalProps) {
         }));
     };
 
+    const [isScanning, setIsScanning] = useState(false);
+    const [availableExes, setAvailableExes] = useState<string[]>([]);
+
+    // Browse for executable file
+    const browseExecutable = async () => {
+        try {
+            const result = await ipc.invoke<{ success: boolean; path?: string }>('select-executable');
+
+            if (result?.success && result.path) {
+                handleChange('executablePath', result.path);
+
+                // Auto-fill install path from executable directory if empty
+                // We use the directory of the exe as effective install path if none other offered
+                if (!formData.installPath) {
+                    const installDir = result.path.substring(0, result.path.lastIndexOf('\\'));
+                    handleChange('installPath', installDir);
+                }
+            }
+        } catch (error) {
+            console.error('Error selecting executable:', error);
+        }
+    };
+
+    // Browse for directory
+    const browseDirectory = async () => {
+        try {
+            const result = await ipc.invoke<{ success: boolean; path?: string }>('select-directory');
+
+            if (result?.success && result.path) {
+                const selectedPath = result.path;
+                handleChange('installPath', selectedPath);
+
+                setIsScanning(true);
+                setAvailableExes([]);
+                handleChange('executablePath', ''); // Reset
+
+                // Auto-scan for executables
+                try {
+                    const scanResult = await ipc.invoke<{ success: boolean; executables?: string[] }>('scan-directory-for-exe', selectedPath);
+
+                    if (scanResult?.success && scanResult.executables && scanResult.executables.length > 0) {
+                        setAvailableExes(scanResult.executables);
+
+                        // Heuristic logic to pick best one
+                        const exes = scanResult.executables;
+                        const forbidden = ['unins', 'uninstall', 'crash', 'reporter', 'config', 'setup', 'dxwebsetup', 'vcredist', 'unitycrashhandler'];
+
+                        const likelyGameExes = exes.filter(exe => {
+                            const name = exe.split('\\').pop()?.toLowerCase() || '';
+                            return !forbidden.some(f => name.includes(f));
+                        });
+
+                        // 1. Try exact/fuzzy title match on filtered list
+                        const titleLower = game.title.toLowerCase().replace(/[^a-z0-9]/g, '');
+                        let bestExe = likelyGameExes.find(exe => {
+                            const name = exe.split('\\').pop()?.toLowerCase().replace('.exe', '').replace(/[^a-z0-9]/g, '') || '';
+                            return name === titleLower || name.includes(titleLower);
+                        });
+
+                        // 2. If no title match, try looking for 'shipping', 'launcher', or simply the shortest/simplest name in base folder
+                        if (!bestExe && likelyGameExes.length > 0) {
+                            bestExe = likelyGameExes[0];
+                        }
+
+                        // 3. Fallback to raw list
+                        if (!bestExe && exes.length > 0) {
+                            bestExe = exes[0];
+                        }
+
+                        if (bestExe) {
+                            handleChange('executablePath', bestExe);
+                        }
+                    } else {
+                        setAvailableExes([]);
+                    }
+                } catch (err) {
+                    console.error('Auto-scan failed', err);
+                } finally {
+                    setIsScanning(false);
+                }
+            }
+        } catch (error) {
+            console.error('Error selecting directory:', error);
+            setIsScanning(false);
+        }
+    };
+
     const handleSubmit = async (e: React.FormEvent) => {
         e.preventDefault();
 
@@ -100,23 +196,41 @@ export function EditGameModal({ game, onClose }: EditGameModalProps) {
         setIsSubmitting(true);
 
         try {
-            await updateGame(game.id, {
-                title: formData.title.trim(),
-                description: formData.description.trim(),
-                coverImage: formData.coverImage || '',
+            console.log('Saving game with data:', {
+                id: game.id,
+                installPath: formData.installPath,
+                executablePath: formData.executablePath
+            });
+
+            // eslint-disable-next-line @typescript-eslint/no-explicit-any
+            const result: any = await updateGame(game.id, {
+                title: formData.title,
+                description: formData.description,
                 executablePath: formData.executablePath || undefined,
                 installPath: formData.installPath || undefined,
-                platform: formData.platform,
-                developer: formData.developer.trim() || 'Desconocido',
+                coverImage: formData.coverImage,
+                backgroundImage: (formData as any).backgroundImage,
+                platform: (formData as any).platform,
                 genres: formData.genres,
+                developer: formData.developer,
+                publisher: (formData as any).publisher,
+                releaseDate: (formData as any).releaseDate,
                 tags: formData.tags,
-                status: formData.status,
-                rating: formData.rating || undefined,
+                status: (formData as any).status,
+                rating: (formData as any).rating || undefined,
                 isInstalled: !!formData.executablePath
             });
-            onClose();
+
+            if (result && result.success === false) {
+                useNotificationStore.getState().showError('Error al guardar', result.error || 'No se pudieron guardar los cambios');
+                console.error('Update game failed:', result.error);
+            } else {
+                useNotificationStore.getState().showSuccess('Juego actualizado', 'Los cambios se han guardado correctamente');
+                onClose();
+            }
         } catch (error) {
             console.error('Failed to update game:', error);
+            useNotificationStore.getState().showError('Error', 'Ha ocurrido un error inesperado al guardar');
         } finally {
             setIsSubmitting(false);
         }
@@ -347,36 +461,96 @@ export function EditGameModal({ game, onClose }: EditGameModalProps) {
                     {activeTab === 'advanced' && (
                         <div className="form-section">
                             <div className="form-group">
-                                <label htmlFor="executablePath">Ruta del ejecutable</label>
-                                <div className="input-with-icon">
-                                    <Folder size={18} />
-                                    <input
-                                        id="executablePath"
-                                        type="text"
-                                        className="input"
-                                        placeholder="C:\Games\MiJuego\game.exe"
-                                        value={formData.executablePath}
-                                        onChange={e => handleChange('executablePath', e.target.value)}
-                                    />
+                                <label htmlFor="installPath">Carpeta de instalación</label>
+                                <div className="input-with-browse">
+                                    <div className="input-with-icon">
+                                        <Folder size={18} />
+                                        <input
+                                            id="installPath"
+                                            type="text"
+                                            className="input"
+                                            placeholder="C:\Games\MiJuego"
+                                            value={formData.installPath}
+                                            onChange={e => handleChange('installPath', e.target.value)}
+                                        />
+                                    </div>
+                                    {isDesktopApp && (
+                                        <button
+                                            type="button"
+                                            className="btn btn-browse"
+                                            onClick={async () => {
+                                                await browseDirectory();
+                                                // Trigger scan logic is handled in browseDirectory now
+                                            }}
+                                            title="Explorar..."
+                                        >
+                                            <MoreHorizontal size={18} />
+                                        </button>
+                                    )}
                                 </div>
                                 <span className="form-hint">
-                                    Permite lanzar el juego directamente desde ORBIT.
+                                    Selecciona la carpeta raíz del juego. Orbit detectará el ejecutable automáticamente.
                                 </span>
                             </div>
 
                             <div className="form-group">
-                                <label htmlFor="installPath">Carpeta de instalación</label>
+                                <label htmlFor="executablePath">Ejecutable detectado</label>
                                 <div className="input-with-icon">
-                                    <Folder size={18} />
-                                    <input
-                                        id="installPath"
-                                        type="text"
-                                        className="input"
-                                        placeholder="C:\Games\MiJuego"
-                                        value={formData.installPath}
-                                        onChange={e => handleChange('installPath', e.target.value)}
-                                    />
+                                    <Gamepad2 size={18} className="text-primary" />
+                                    <select
+                                        id="executablePath"
+                                        className="input select"
+                                        value={formData.executablePath}
+                                        onChange={e => handleChange('executablePath', e.target.value)}
+                                        disabled={isScanning || (availableExes.length === 0 && !formData.executablePath)}
+                                    >
+                                        <option value="">
+                                            {isScanning
+                                                ? 'Escaneando carpeta...'
+                                                : (availableExes.length === 0 && !formData.executablePath
+                                                    ? 'No se encontraron ejecutables'
+                                                    : 'Selecciona un ejecutable...')
+                                            }
+                                        </option>
+
+                                        {/* Show currently selected value if not in list (Manual selection) */}
+                                        {formData.executablePath && !availableExes.includes(formData.executablePath) && (
+                                            <option value={formData.executablePath}>
+                                                {formData.executablePath.split('\\').pop()} (Manual)
+                                            </option>
+                                        )}
+
+                                        {availableExes.map(exe => (
+                                            <option key={exe} value={exe}>
+                                                {exe.replace(formData.installPath, '').replace(/^\\/, '')} ({exe.split('\\').pop()})
+                                            </option>
+                                        ))}
+                                    </select>
+                                    {isScanning && <Loader2 size={18} className="spinner text-primary" />}
+
+                                    {/* Manual override button */}
+                                    {isDesktopApp && (
+                                        <button
+                                            type="button"
+                                            className="btn btn-browse"
+                                            onClick={browseExecutable}
+                                            title="Seleccionar archivo .exe manualmente"
+                                            style={{ marginLeft: '8px' }}
+                                        >
+                                            <MoreHorizontal size={18} />
+                                        </button>
+                                    )}
                                 </div>
+                                {formData.executablePath && (
+                                    <span className="form-hint text-success">
+                                        ¡Ejecutable vinculado correctamente!
+                                    </span>
+                                )}
+                                {!isScanning && availableExes.length === 0 && formData.installPath && (
+                                    <span className="form-hint text-warning">
+                                        No se encontraron archivos .exe automáticamente. Usa el botón (...) para seleccionarlo manualment.
+                                    </span>
+                                )}
                             </div>
                         </div>
                     )}
